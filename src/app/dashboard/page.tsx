@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
 import type { Category } from "@/lib/constants";
 import { toISODate, formatShortDate } from "@/lib/date";
+import SavingsNudgeCard from "@/components/SavingsNudgeCard";
 
 type Expense = {
   id: number;
@@ -130,6 +131,8 @@ export default function Dashboard() {
         <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
         Back to Home
       </Link>
+
+      <SavingsNudgeCard />
 
       <div className="mx-auto flex w-full max-w-md items-center justify-center gap-1 rounded-full border border-border p-1.5">
         {TABS.map((tab) => (
