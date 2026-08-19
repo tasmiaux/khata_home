@@ -41,7 +41,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 border border-border bg-background px-3 py-2 text-left text-foreground transition-colors hover:border-accent/50 focus:border-accent focus:outline-none"
+        className="flex w-full items-center justify-between gap-2 rounded-full border border-border bg-background px-4 py-2 text-left text-foreground transition-colors hover:border-accent/50 focus:border-accent focus:outline-none"
       >
         <span className="flex items-center gap-2 truncate">
           {SelectedIcon && <SelectedIcon className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
@@ -56,7 +56,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
       {open && (
         <ul
           role="listbox"
-          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto border border-border bg-background py-1 shadow-lg"
+          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-background p-1 shadow-lg"
         >
           {options.map((option) => {
             const Icon = option.icon;
@@ -69,7 +69,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent-soft ${
+                  className={`flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent-soft ${
                     isSelected ? "font-medium text-accent" : "text-foreground"
                   }`}
                 >

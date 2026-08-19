@@ -7,16 +7,24 @@ digitized ledger book.
 
 ## Features
 
-- **Quick expense entry** — amount, category (11 household-specific options),
+- **Quick expense entry** — amount, category (12 household-specific options),
   payment mode (Cash / UPI / Card), and an optional note.
-- **Edit & delete** — fix a mistaken entry or remove one, right from the list.
-- **Date browser** — a calendar picker lets you view any previous day's
-  spending, not just today's.
+- **Inline edit & delete** — tap an entry to edit it right there in the list
+  (amount, category, payment, note), or delete it instantly.
+- **Date browser** — a calendar picker on Home lets you view any previous
+  day's spending. The Dashboard's "Today" tab follows the same selected
+  date, so both stay in sync.
 - **Dashboard** — category-wise breakdown with a donut chart; switch between
   Today (live data), Weekly, and Monthly views.
   > Weekly/Monthly currently use placeholder data — see the `TODO` in
   > `src/app/dashboard/page.tsx` for the real aggregation query to build.
+- **Share with Family** — generate a read-only summary link from the
+  Dashboard (this month's total, remaining budget if set, category
+  breakdown). Viewers don't need a Khata account to open it.
 - **Calculator** — a built-in quick-math tool for on-the-fly totals.
+- **Simple local login** — a lightweight name/email/password flow (no
+  backend auth, no external provider) so the greeting is personalized and
+  expenses stay separated per profile on a device.
 
 ## Tech stack
 
@@ -36,12 +44,17 @@ digitized ledger book.
    ```bash
    npm install
    node scripts/init-db.mjs
+   node scripts/migrate-ledger.mjs
+   node scripts/migrate-user-auth.mjs
+   node scripts/migrate-shares.mjs
    ```
 4. Run the dev server:
    ```bash
    npm run dev
    ```
    Runs on `http://localhost:8080` (see `package.json`'s `dev` script).
+5. Open the app and register a profile — that's the only "setup" needed to
+   start adding expenses.
 
 ## Deploying
 
@@ -53,17 +66,28 @@ digitized ledger book.
 
 ## Project structure
 
-- `src/app/page.tsx` — Home (add/edit/delete, date browsing)
-- `src/app/dashboard/page.tsx` — spending breakdown + chart
+- `src/app/page.tsx` — Home (add/inline-edit/delete, date browsing)
+- `src/app/dashboard/page.tsx` — spending breakdown, chart, sharing
 - `src/app/calculator/page.tsx` — calculator utility
+- `src/app/login/`, `src/app/register/` — local auth screens
+- `src/app/shared/[id]/page.tsx` — public read-only summary page
 - `src/app/api/expenses/` — REST API (GET/POST, PATCH/DELETE by id)
-- `src/lib/` — shared constants, category→icon/color maps, date helpers
-- `src/components/` — reusable UI (custom Select dropdown, bottom nav)
+- `src/app/api/shares/` — create/look up a share link
+- `src/lib/` — constants, category→icon/color maps, date helpers, auth
+  (`auth.ts`, `authContext.tsx`), shared date state (`selectedDateContext.tsx`)
+- `src/components/` — reusable UI (custom Select dropdown, Pill tag,
+  top bar, bottom nav)
 - `scripts/` — one-off DB setup/migration scripts
 
 ## Known limitations / next steps
 
 - Weekly and Monthly dashboard tabs use mock data, not real date-range queries.
-- No authentication — single-user by design.
+- Login is local-only (browser `localStorage`, no password hashing, no
+  server-side auth) — it's enough to personalize the app and separate data
+  per profile, not real account security.
+- Expenses created before a profile existed have no owner and are visible
+  to any signed-in profile on this deployment (see `user_id IS NULL`
+  handling in the API routes).
 - No backdating: new expenses are always timestamped "now," even if you're
   viewing a past date.
+- Share links are live (recompute on every view), not frozen snapshots.

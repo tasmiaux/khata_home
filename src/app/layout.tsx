@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Kalam, Lora } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import TopBar from "@/components/TopBar";
+import { AuthProvider } from "@/lib/authContext";
+import { SelectedDateProvider } from "@/lib/selectedDateContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,14 +40,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} ${lora.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <div className="flex justify-center border-b border-border py-3">
-          <div className="flex items-baseline gap-0.5 font-hand text-xl leading-none">
-            <span className="text-accent">खा</span>
-            <span className="text-foreground">ta</span>
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col pb-24">{children}</div>
-        <BottomNav />
+        <AuthProvider>
+          <SelectedDateProvider>
+            <TopBar />
+            <div className="flex flex-1 flex-col pb-24">{children}</div>
+            <BottomNav />
+          </SelectedDateProvider>
+        </AuthProvider>
       </body>
     </html>
   );

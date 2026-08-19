@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { CATEGORIES, PAYMENT_MODES, type Category, type PaymentMode } from "@/lib/constants";
 import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
-import { toISODate, formatDateLabel } from "@/lib/date";
+import Pill from "@/components/Pill";
+import { formatDateLabel } from "@/lib/date";
+import { useSelectedDate } from "@/lib/selectedDateContext";
+import { useAuth } from "@/lib/authContext";
 import { Calendar, Pencil, Trash2 } from "lucide-react";
 
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c, icon: CATEGORY_ICON[c] }));
@@ -19,9 +22,17 @@ type Expense = {
   created_at: string;
 };
 
+type EditDraft = {
+  id: number;
+  amount: string;
+  category: Category;
+  paymentMode: PaymentMode;
+  note: string;
+};
+
 export default function Home() {
-  const [todayIso] = useState(() => toISODate(new Date()));
-  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const { profile, isAuthenticated, ready } = useAuth();
+  const { selectedDate, setSelectedDate, todayIso } = useSelectedDate();
   const isToday = selectedDate === todayIso;
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -29,55 +40,38 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<Category>(CATEGORIES[0]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(PAYMENT_MODES[0]);
   const [note, setNote] = useState("");
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const [editing, setEditing] = useState<EditDraft | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   async function loadExpenses(date: string) {
+    if (!profile) return;
     setLoading(true);
-    const res = await fetch(`/api/expenses?date=${date}`);
+    const res = await fetch(`/api/expenses?date=${date}&userId=${profile.id}`);
     const data = await res.json();
     setExpenses(data.expenses ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
-    loadExpenses(selectedDate);
-  }, [selectedDate]);
+    if (profile) loadExpenses(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, profile]);
 
   const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
-  function resetForm() {
-    setEditingId(null);
-    setAmount("");
-    setCategory(CATEGORIES[0]);
-    setPaymentMode(PAYMENT_MODES[0]);
-    setNote("");
-    setError(null);
-  }
-
-  function startEdit(expense: Expense) {
-    setEditingId(expense.id);
-    setAmount(String(expense.amount));
-    setCategory((CATEGORIES as readonly string[]).includes(expense.category)
-      ? (expense.category as Category)
-      : CATEGORIES[0]);
-    setPaymentMode(expense.payment_mode as PaymentMode);
-    setNote(expense.note ?? "");
-    setError(null);
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   async function handleDelete(id: number) {
+    if (!profile) return;
     try {
-      const res = await fetch(`/api/expenses/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/expenses/${id}?userId=${profile.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete expense");
       setExpenses((prev) => prev.filter((e) => e.id !== id));
-      if (editingId === id) resetForm();
+      if (editing?.id === id) setEditing(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -86,6 +80,7 @@ export default function Home() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!profile) return;
 
     const parsedAmount = Number(amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -95,22 +90,17 @@ export default function Home() {
 
     setSubmitting(true);
     try {
-      const isEditing = editingId !== null;
-      const res = await fetch(isEditing ? `/api/expenses/${editingId}` : "/api/expenses", {
-        method: isEditing ? "PATCH" : "POST",
+      const res = await fetch("/api/expenses", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: parsedAmount, category, paymentMode, note }),
+        body: JSON.stringify({ amount: parsedAmount, category, paymentMode, note, userId: profile.id }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error ?? "Failed to save expense");
       }
-      if (isEditing) {
-        resetForm();
-      } else {
-        setAmount("");
-        setNote("");
-      }
+      setAmount("");
+      setNote("");
       await loadExpenses(selectedDate);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -119,7 +109,55 @@ export default function Home() {
     }
   }
 
-  const isEditing = editingId !== null;
+  function startEdit(expense: Expense) {
+    setEditError(null);
+    setEditing({
+      id: expense.id,
+      amount: String(expense.amount),
+      category: (CATEGORIES as readonly string[]).includes(expense.category)
+        ? (expense.category as Category)
+        : CATEGORIES[0],
+      paymentMode: expense.payment_mode as PaymentMode,
+      note: expense.note ?? "",
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing || !profile) return;
+    const parsedAmount = Number(editing.amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setEditError("Enter a valid amount");
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/expenses/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parsedAmount,
+          category: editing.category,
+          paymentMode: editing.paymentMode,
+          note: editing.note,
+          userId: profile.id,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to save expense");
+      }
+      setEditing(null);
+      await loadExpenses(selectedDate);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  if (!ready || !isAuthenticated || !profile) return null;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
@@ -129,7 +167,7 @@ export default function Home() {
             <span className="text-xs font-medium tracking-wide text-muted uppercase">
               {formatDateLabel(selectedDate)}
             </span>
-            <h1 className="font-serif text-3xl text-foreground">Hi Fatima!</h1>
+            <h1 className="font-serif text-3xl text-foreground">Hi {profile.name}!</h1>
           </div>
 
           <div className="relative mt-0.5">
@@ -164,26 +202,7 @@ export default function Home() {
         )}
       </header>
 
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4 border border-border px-5 py-5"
-      >
-        {isEditing && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium tracking-wide text-accent uppercase">
-              Editing entry
-            </span>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-xs font-medium tracking-wide text-muted uppercase underline underline-offset-2 hover:text-foreground"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="amount" className="text-xs font-medium tracking-wide text-muted uppercase">
             Amount
@@ -244,7 +263,7 @@ export default function Home() {
           disabled={submitting}
           className="mt-1 bg-accent px-4 py-2.5 font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
         >
-          {submitting ? (isEditing ? "Saving..." : "Adding...") : isEditing ? "Save changes" : "Add expense"}
+          {submitting ? "Adding..." : "Add expense"}
         </button>
       </form>
 
@@ -260,54 +279,101 @@ export default function Home() {
           <ul className="flex flex-col">
             {expenses.map((e) => {
               const Icon = CATEGORY_ICON[e.category as Category];
+              const isRowEditing = editing?.id === e.id;
               return (
-                <li
-                  key={e.id}
-                  className="flex items-start gap-3 border-t border-border py-3 last:border-b"
-                >
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border">
-                    {Icon ? (
-                      <Icon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                    )}
-                  </span>
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-serif text-foreground">{e.category}</span>
-                      <span className="font-serif tabular-nums text-foreground">
-                        ₹{Number(e.amount).toFixed(2)}
-                      </span>
+                <li key={e.id} className="border-t border-border py-3 last:border-b">
+                  {isRowEditing ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min="0"
+                          value={editing.amount}
+                          onChange={(ev) => setEditing({ ...editing, amount: ev.target.value })}
+                          className="w-24 border border-border bg-background px-2.5 py-2 font-serif text-foreground focus:border-accent focus:outline-none"
+                        />
+                        <div className="flex-1">
+                          <Select
+                            value={editing.category}
+                            onChange={(v) => setEditing({ ...editing, category: v })}
+                            options={CATEGORY_OPTIONS}
+                          />
+                        </div>
+                      </div>
+                      <Select
+                        value={editing.paymentMode}
+                        onChange={(v) => setEditing({ ...editing, paymentMode: v })}
+                        options={PAYMENT_OPTIONS}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Note (optional)"
+                        value={editing.note}
+                        onChange={(ev) => setEditing({ ...editing, note: ev.target.value })}
+                        className="border-b border-border bg-transparent pb-1.5 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+                      />
+                      {editError && <p className="text-xs text-red-700">{editError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={saveEdit}
+                          disabled={savingEdit}
+                          className="flex-1 bg-accent px-3 py-2 text-sm font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+                        >
+                          {savingEdit ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(null)}
+                          className="flex-1 border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="border border-border px-1.5 py-0.5 text-[11px] text-muted">
-                        {e.payment_mode}
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border">
+                        {Icon ? (
+                          <Icon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
+                        ) : (
+                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                        )}
                       </span>
-                      {e.note && (
-                        <span className="border border-border px-1.5 py-0.5 text-[11px] text-muted italic">
-                          {e.note}
-                        </span>
-                      )}
+                      <div className="flex flex-1 flex-col">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-serif text-foreground">{e.category}</span>
+                          <span className="font-serif tabular-nums text-foreground">
+                            ₹{Number(e.amount).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <Pill icon={PAYMENT_ICON[e.payment_mode as PaymentMode]} label={e.payment_mode} />
+                          {e.note && <Pill label={e.note} />}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(e)}
+                          aria-label="Edit expense"
+                          className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-accent"
+                        >
+                          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(e.id)}
+                          aria-label="Delete expense"
+                          className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-red-700"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(e)}
-                      aria-label="Edit expense"
-                      className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-accent"
-                    >
-                      <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(e.id)}
-                      aria-label="Delete expense"
-                      className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-red-700"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-                    </button>
-                  </div>
+                  )}
                 </li>
               );
             })}

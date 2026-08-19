@@ -3,17 +3,23 @@ import { pool } from "@/lib/db";
 import { CATEGORIES, PAYMENT_MODES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
-  const date = new URL(request.url).searchParams.get("date");
+  const params = new URL(request.url).searchParams;
+  const date = params.get("date");
+  const userId = params.get("userId");
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "date query param (YYYY-MM-DD) is required" }, { status: 400 });
+  }
+  if (!userId) {
+    return NextResponse.json({ error: "userId query param is required" }, { status: 400 });
   }
 
   const { rows } = await pool.query(
     `SELECT id, amount, category, payment_mode, note, created_at
      FROM expenses
      WHERE created_at::date = $1::date
+       AND (user_id = $2 OR user_id IS NULL)
      ORDER BY created_at DESC`,
-    [date]
+    [date, userId]
   );
   return NextResponse.json({ expenses: rows });
 }
@@ -21,9 +27,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const amount = Number(body.amount);
-  const { category, paymentMode } = body;
+  const { category, paymentMode, userId } = body;
   const note = typeof body.note === "string" ? body.note.trim() : "";
 
+  if (!userId || typeof userId !== "string") {
+    return NextResponse.json({ error: "userId is required" }, { status: 400 });
+  }
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 });
   }
@@ -35,10 +44,10 @@ export async function POST(request: NextRequest) {
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO expenses (amount, category, payment_mode, note)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO expenses (amount, category, payment_mode, note, user_id)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id, amount, category, payment_mode, note, created_at`,
-    [amount, category, paymentMode, note || null]
+    [amount, category, paymentMode, note || null, userId]
   );
 
   return NextResponse.json({ expense: rows[0] }, { status: 201 });

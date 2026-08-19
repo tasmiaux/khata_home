@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Share2, Copy, Check } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
 import type { Category } from "@/lib/constants";
-import { toISODate, formatShortDate } from "@/lib/date";
-import SavingsNudgeCard from "@/components/SavingsNudgeCard";
+import { formatShortDate } from "@/lib/date";
+import { useSelectedDate } from "@/lib/selectedDateContext";
+import { useAuth } from "@/lib/authContext";
 
 type Expense = {
   id: number;
@@ -33,9 +34,10 @@ const MOCK_WEEKLY: Partial<Record<Category, number>> = {
   "Groceries & Meat": 2100,
   Milk: 350,
   "Electricity Bill": 1200,
-  Maid: 800,
+  Househelp: 800,
   Hangout: 1500,
   "Food Delivery": 900,
+  Rides: 400,
   Shopping: 650,
   Medicines: 300,
   "Home Essentials": 500,
@@ -46,9 +48,10 @@ const MOCK_MONTHLY: Partial<Record<Category, number>> = {
   "Groceries & Meat": 8200,
   Milk: 1400,
   "Electricity Bill": 3200,
-  Maid: 3200,
+  Househelp: 3200,
   Hangout: 4500,
   "Food Delivery": 2600,
+  Rides: 1600,
   Shopping: 2100,
   Medicines: 950,
   Repairs: 1200,
@@ -63,19 +66,83 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const FALLBACK_COLOR = "#98918a";
 
 export default function Dashboard() {
-  const [todayIso] = useState(() => toISODate(new Date()));
+  const { profile, isAuthenticated, ready } = useAuth();
+  const { selectedDate, todayIso } = useSelectedDate();
+  const isSelectedToday = selectedDate === todayIso;
+
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [shareBudget, setShareBudget] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
-    fetch(`/api/expenses?date=${todayIso}`)
+    if (!profile) return;
+    setLoading(true);
+    fetch(`/api/expenses?date=${selectedDate}&userId=${profile.id}`)
       .then((res) => res.json())
       .then((data) => {
         setExpenses(data.expenses ?? []);
         setLoading(false);
       });
-  }, [todayIso]);
+  }, [selectedDate, profile]);
+
+  useEffect(() => {
+    if (!profile) return;
+    fetch(`/api/shares?userId=${profile.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.share) {
+          setShareId(data.share.id);
+          setShareBudget(data.share.budget !== null ? String(data.share.budget) : "");
+        }
+      });
+  }, [profile]);
+
+  const shareLink = shareId && typeof window !== "undefined" ? `${window.location.origin}/shared/${shareId}` : null;
+
+  async function handleGenerateShare() {
+    if (!profile) return;
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      const res = await fetch("/api/shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.id,
+          ownerName: profile.name,
+          budget: shareBudget.trim() === "" ? null : Number(shareBudget),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to generate link");
+      }
+      const data = await res.json();
+      setShareId(data.share.id);
+    } catch (err) {
+      setShareError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setShareError("Couldn't copy automatically — select and copy the link above.");
+    }
+  }
 
   const byCategory: CategoryTotal[] =
     activeTab === "today"
@@ -95,14 +162,18 @@ export default function Dashboard() {
 
   const heading =
     activeTab === "today"
-      ? "Today's breakdown"
+      ? isSelectedToday
+        ? "Today's breakdown"
+        : `${formatShortDate(selectedDate)} breakdown`
       : activeTab === "weekly"
         ? "Weekly breakdown"
         : "Monthly breakdown";
 
   const summary =
     activeTab === "today"
-      ? `Today, ${formatShortDate(todayIso)} — you've spent ₹${total.toFixed(2)}`
+      ? isSelectedToday
+        ? `Today, ${formatShortDate(selectedDate)} — you've spent ₹${total.toFixed(2)}`
+        : `${formatShortDate(selectedDate)} — you've spent ₹${total.toFixed(2)}`
       : activeTab === "weekly"
         ? `This week — you've spent ₹${total.toFixed(2)}`
         : `This month — you've spent ₹${total.toFixed(2)}`;
@@ -122,6 +193,8 @@ export default function Dashboard() {
     return segment;
   });
 
+  if (!ready || !isAuthenticated || !profile) return null;
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
       <Link
@@ -132,7 +205,74 @@ export default function Dashboard() {
         Back to Home
       </Link>
 
-      <SavingsNudgeCard />
+      <div className="flex flex-col gap-3 border border-border px-5 py-4">
+        <button
+          type="button"
+          onClick={() => setShareOpen((o) => !o)}
+          className="flex items-center gap-2 text-sm font-medium text-foreground"
+        >
+          <Share2 className="h-4 w-4 text-accent" strokeWidth={2} />
+          Share with Family
+        </button>
+
+        {shareOpen && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="shareBudget"
+                className="text-xs font-medium tracking-wide text-muted uppercase"
+              >
+                Monthly Budget <span className="normal-case text-muted/60">(optional)</span>
+              </label>
+              <input
+                id="shareBudget"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="₹0.00"
+                value={shareBudget}
+                onChange={(e) => setShareBudget(e.target.value)}
+                className="border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+              />
+            </div>
+
+            {shareError && <p className="text-sm text-red-700">{shareError}</p>}
+
+            <button
+              type="button"
+              onClick={handleGenerateShare}
+              disabled={shareLoading}
+              className="bg-accent px-4 py-2.5 text-sm font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+            >
+              {shareLoading ? "Saving..." : shareLink ? "Update Link" : "Generate Link"}
+            </button>
+
+            {shareLink && (
+              <div className="flex flex-col gap-2">
+                <div className="border border-border px-3 py-2 text-sm text-muted">
+                  {shareLink}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="flex items-center justify-center gap-1.5 border border-border px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" strokeWidth={2} />
+                  )}
+                  {copied ? "Copied" : "Copy Link"}
+                </button>
+                <p className="text-xs text-muted">
+                  Anyone with this link can view a read-only summary — no login needed.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="mx-auto flex w-full max-w-md items-center justify-center gap-1 rounded-full border border-border p-1.5">
         {TABS.map((tab) => (
@@ -201,7 +341,7 @@ export default function Dashboard() {
                   className="flex items-center gap-3 border-t border-border py-3 last:border-b"
                 >
                   <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: s.color }}
                   />
                   {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />}

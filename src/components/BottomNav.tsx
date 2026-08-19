@@ -10,8 +10,12 @@ const ITEMS = [
   { href: "/calculator", label: "Calculator", icon: Calculator },
 ] as const;
 
+const HIDDEN_ON = ["/login", "/register"];
+
 export default function BottomNav() {
   const pathname = usePathname();
+
+  if (HIDDEN_ON.includes(pathname) || pathname.startsWith("/shared/")) return null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
