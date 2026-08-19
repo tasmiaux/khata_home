@@ -61,8 +61,8 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-8">
       <header className="flex flex-col gap-1">
-        <h1 className="font-serif text-3xl text-foreground">Welcome back</h1>
-        <p className="text-[15px] text-muted">Log in to continue as {profile.name}.</p>
+        <h1 className="font-serif text-3xl text-foreground">Welcome back to your khata</h1>
+        <p className="text-[15px] text-muted">Pick up right where your ledger left off.</p>
       </header>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">

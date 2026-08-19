@@ -36,9 +36,9 @@ export default function RegisterPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-8">
       <header className="flex flex-col gap-1">
-        <h1 className="font-serif text-3xl text-foreground">Create your Khata</h1>
+        <h1 className="font-serif text-3xl text-foreground">Your household, your ledger.</h1>
         <p className="text-[15px] text-muted">
-          Just enough to say hello and keep your entries yours.
+          Every home keeps a khata. Let&apos;s set up yours.
         </p>
       </header>
 
