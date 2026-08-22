@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Share2, Copy, Check } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
 import type { Category } from "@/lib/constants";
-import { formatShortDate } from "@/lib/date";
+import { formatShortDate, localDayRangeUtc } from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
 
@@ -84,7 +84,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profile) return;
     setLoading(true);
-    fetch(`/api/expenses?date=${selectedDate}&userId=${profile.id}`)
+    const { from, to } = localDayRangeUtc(selectedDate);
+    fetch(`/api/expenses?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&userId=${profile.id}`)
       .then((res) => res.json())
       .then((data) => {
         setExpenses(data.expenses ?? []);

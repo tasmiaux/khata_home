@@ -5,7 +5,7 @@ import { CATEGORIES, PAYMENT_MODES, type Category, type PaymentMode } from "@/li
 import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
 import Pill from "@/components/Pill";
-import { formatDateLabel } from "@/lib/date";
+import { formatDateLabel, localDayRangeUtc } from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
 import { Calendar, Pencil, Trash2 } from "lucide-react";
@@ -52,7 +52,10 @@ export default function Home() {
   async function loadExpenses(date: string) {
     if (!profile) return;
     setLoading(true);
-    const res = await fetch(`/api/expenses?date=${date}&userId=${profile.id}`);
+    const { from, to } = localDayRangeUtc(date);
+    const res = await fetch(
+      `/api/expenses?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&userId=${profile.id}`
+    );
     const data = await res.json();
     setExpenses(data.expenses ?? []);
     setLoading(false);
@@ -222,14 +225,14 @@ export default function Home() {
         </div>
 
         <div className="flex gap-4">
-          <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <label htmlFor="category" className="label-stamp text-xs text-muted uppercase">
               Category
             </label>
             <Select id="category" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} />
           </div>
 
-          <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <label htmlFor="paymentMode" className="label-stamp text-xs text-muted uppercase">
               Payment
             </label>

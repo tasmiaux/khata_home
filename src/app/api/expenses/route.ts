@@ -4,10 +4,14 @@ import { CATEGORIES, PAYMENT_MODES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   const params = new URL(request.url).searchParams;
-  const date = params.get("date");
+  const from = params.get("from");
+  const to = params.get("to");
   const userId = params.get("userId");
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ error: "date query param (YYYY-MM-DD) is required" }, { status: 400 });
+  if (!from || !to || Number.isNaN(Date.parse(from)) || Number.isNaN(Date.parse(to))) {
+    return NextResponse.json(
+      { error: "from and to query params (ISO timestamps) are required" },
+      { status: 400 }
+    );
   }
   if (!userId) {
     return NextResponse.json({ error: "userId query param is required" }, { status: 400 });
@@ -16,10 +20,10 @@ export async function GET(request: NextRequest) {
   const { rows } = await pool.query(
     `SELECT id, amount, category, payment_mode, note, created_at
      FROM expenses
-     WHERE created_at::date = $1::date
-       AND (user_id = $2 OR user_id IS NULL)
+     WHERE created_at >= $1 AND created_at < $2
+       AND (user_id = $3 OR user_id IS NULL)
      ORDER BY created_at DESC`,
-    [date, userId]
+    [from, to, userId]
   );
   return NextResponse.json({ expenses: rows });
 }

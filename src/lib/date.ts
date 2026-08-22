@@ -12,6 +12,18 @@ export function parseISODate(iso: string): Date {
   return new Date(year, month - 1, day);
 }
 
+// UTC instant bounds for a local calendar date, expressed in the caller's
+// own timezone (via parseISODate's local-midnight construction). Filtering
+// by this range instead of casting created_at::date server-side avoids a
+// day-boundary mismatch when the browser's timezone differs from the
+// database session's (e.g. IST vs Postgres's UTC default).
+export function localDayRangeUtc(iso: string): { from: string; to: string } {
+  const start = parseISODate(iso);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
 // e.g. "Friday, 15 August"
 export function formatDateLabel(iso: string): string {
   return parseISODate(iso).toLocaleDateString("en-GB", {
