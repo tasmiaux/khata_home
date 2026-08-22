@@ -33,21 +33,21 @@ export const CATEGORY_ICON: Record<Category, LucideIcon> = {
   Miscellaneous: MoreHorizontal,
 };
 
-// Shades of the Khata accent (forest green), darkest to lightest — used for
+// Shades of the Khata accent (navy), darkest to lightest — used for
 // chart segments / swatches where categories need to be told apart visually.
 export const CATEGORY_CHART_COLOR: Record<Category, string> = {
-  "Groceries & Meat": "#1f3327",
-  Medicines: "#2f4a3a",
-  Hangout: "#3c5c48",
-  Househelp: "#4a6f56",
-  Milk: "#588264",
-  "Electricity Bill": "#669573",
-  Repairs: "#7aa583",
-  "Food Delivery": "#8fb595",
-  Rides: "#93a67d",
-  Shopping: "#a5c5a8",
-  "Home Essentials": "#bcd5bc",
-  Miscellaneous: "#d3e5d1",
+  "Groceries & Meat": "#16222c",
+  Medicines: "#283339",
+  Hangout: "#39444e",
+  Househelp: "#4a555e",
+  Milk: "#5c666f",
+  "Electricity Bill": "#6d7880",
+  Repairs: "#7f8990",
+  "Food Delivery": "#909aa1",
+  Rides: "#a2abb2",
+  Shopping: "#b3bcc3",
+  "Home Essentials": "#c5cdd3",
+  Miscellaneous: "#d6dee4",
 };
 
 export const PAYMENT_ICON: Record<PaymentMode, LucideIcon> = {

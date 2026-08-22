@@ -164,7 +164,7 @@ export default function Home() {
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium tracking-wide text-muted uppercase">
+            <span className="label-stamp text-xs text-muted uppercase">
               {formatDateLabel(selectedDate)}
             </span>
             <h1 className="font-serif text-3xl text-foreground">Hi {profile.name}!</h1>
@@ -204,7 +204,7 @@ export default function Home() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="amount" className="text-xs font-medium tracking-wide text-muted uppercase">
+          <label htmlFor="amount" className="label-stamp text-xs text-muted uppercase">
             Amount
           </label>
           <input
@@ -223,14 +223,14 @@ export default function Home() {
 
         <div className="flex gap-4">
           <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor="category" className="text-xs font-medium tracking-wide text-muted uppercase">
+            <label htmlFor="category" className="label-stamp text-xs text-muted uppercase">
               Category
             </label>
             <Select id="category" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} />
           </div>
 
           <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor="paymentMode" className="text-xs font-medium tracking-wide text-muted uppercase">
+            <label htmlFor="paymentMode" className="label-stamp text-xs text-muted uppercase">
               Payment
             </label>
             <Select
@@ -243,7 +243,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="note" className="text-xs font-medium tracking-wide text-muted uppercase">
+          <label htmlFor="note" className="label-stamp text-xs text-muted uppercase">
             Note <span className="normal-case text-muted/60">(optional)</span>
           </label>
           <input
@@ -268,7 +268,7 @@ export default function Home() {
       </form>
 
       <div className="flex flex-col">
-        <h2 className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">
+        <h2 className="label-stamp mb-1 text-xs text-muted uppercase">
           {isToday ? "Today's expenses" : "Expenses"}
         </h2>
         {loading ? (
@@ -281,7 +281,7 @@ export default function Home() {
               const Icon = CATEGORY_ICON[e.category as Category];
               const isRowEditing = editing?.id === e.id;
               return (
-                <li key={e.id} className="border-t border-border py-3 last:border-b">
+                <li key={e.id} className="min-h-12 border-t border-border py-3 last:border-b">
                   {isRowEditing ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-2">
@@ -377,8 +377,8 @@ export default function Home() {
                 </li>
               );
             })}
-            <li className="flex items-baseline justify-between border-t-2 border-foreground pt-3">
-              <span className="text-xs font-medium tracking-wide text-muted uppercase">
+            <li className="flex min-h-12 items-baseline justify-between border-t-2 border-foreground pt-3">
+              <span className="label-stamp text-xs text-muted uppercase">
                 Total Spent
               </span>
               <span className="font-serif text-lg font-semibold text-accent tabular-nums">

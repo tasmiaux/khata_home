@@ -41,7 +41,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 rounded-full border border-border bg-background px-4 py-2 text-left text-foreground transition-colors hover:border-accent/50 focus:border-accent focus:outline-none"
+        className="flex w-full items-center justify-between gap-2 rounded-full border border-foreground/20 bg-background px-4 py-2 text-left text-foreground transition-colors hover:border-accent/50 focus:border-accent focus:outline-none"
       >
         <span className="flex items-center gap-2 truncate">
           {SelectedIcon && <SelectedIcon className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}

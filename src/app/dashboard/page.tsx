@@ -220,7 +220,7 @@ export default function Dashboard() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="shareBudget"
-                className="text-xs font-medium tracking-wide text-muted uppercase"
+                className="label-stamp text-xs text-muted uppercase"
               >
                 Monthly Budget <span className="normal-case text-muted/60">(optional)</span>
               </label>
@@ -325,7 +325,7 @@ export default function Dashboard() {
               ))}
             </svg>
             <div className="absolute flex flex-col items-center">
-              <span className="text-xs font-medium tracking-wide text-muted uppercase">Total</span>
+              <span className="label-stamp text-xs text-muted uppercase">Total</span>
               <span className="font-serif text-2xl font-semibold text-foreground">
                 ₹{total.toFixed(2)}
               </span>
@@ -338,7 +338,7 @@ export default function Dashboard() {
               return (
                 <li
                   key={s.category}
-                  className="flex items-center gap-3 border-t border-border py-3 last:border-b"
+                  className="flex min-h-12 items-center gap-3 border-t border-border py-3 last:border-b"
                 >
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"

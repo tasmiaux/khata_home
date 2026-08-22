@@ -24,7 +24,9 @@ digitized ledger book.
 - **Calculator** — a built-in quick-math tool for on-the-fly totals.
 - **Simple local login** — a lightweight name/email/password flow (no
   backend auth, no external provider) so the greeting is personalized and
-  expenses stay separated per profile on a device.
+  expenses stay separated per profile. Supports multiple profiles on the
+  same device (e.g. different family members sharing a phone) with a
+  profile picker on the login screen.
 
 ## Tech stack
 
@@ -84,9 +86,10 @@ digitized ledger book.
 - Weekly and Monthly dashboard tabs use mock data, not real date-range queries.
 - Login is local-only (browser `localStorage`, no password hashing, no
   server-side auth) — it's enough to personalize the app and separate data
-  per profile, not real account security.
-- Expenses created before a profile existed have no owner and are visible
-  to any signed-in profile on this deployment (see `user_id IS NULL`
+  per profile, not real account security. Profiles live in `localStorage`,
+  so they don't follow you to a different browser or device.
+- Expenses created before per-profile tagging existed have no owner and are
+  visible to any signed-in profile on this deployment (see `user_id IS NULL`
   handling in the API routes).
 - No backdating: new expenses are always timestamped "now," even if you're
   viewing a past date.

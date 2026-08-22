@@ -31,7 +31,7 @@ export default function RegisterPage() {
 
   const inputClass =
     "border border-border bg-background px-3 py-2.5 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none";
-  const labelClass = "text-xs font-medium tracking-wide text-muted uppercase";
+  const labelClass = "label-stamp text-xs text-muted uppercase";
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-8">

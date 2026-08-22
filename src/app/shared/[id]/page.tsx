@@ -47,7 +47,7 @@ export default async function SharedSummaryPage({
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
-      <p className="text-xs font-medium tracking-wide text-muted uppercase">
+      <p className="label-stamp text-xs text-muted uppercase">
         Shared by {ownerName} via Khata
       </p>
 
@@ -61,7 +61,7 @@ export default async function SharedSummaryPage({
 
       {remaining !== null && (
         <div className="flex items-baseline justify-between border border-border px-5 py-4">
-          <span className="text-xs font-medium tracking-wide text-muted uppercase">
+          <span className="label-stamp text-xs text-muted uppercase">
             Remaining Budget
           </span>
           <span
@@ -75,7 +75,7 @@ export default async function SharedSummaryPage({
       )}
 
       <div className="flex flex-col">
-        <h2 className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">
+        <h2 className="label-stamp mb-1 text-xs text-muted uppercase">
           Category breakdown
         </h2>
         {byCategory.length === 0 ? (
@@ -87,7 +87,7 @@ export default async function SharedSummaryPage({
               return (
                 <li
                   key={c.category}
-                  className="flex items-center gap-3 border-t border-border py-3 last:border-b"
+                  className="flex min-h-12 items-center gap-3 border-t border-border py-3 last:border-b"
                 >
                   {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />}
                   <span className="flex-1 font-serif text-foreground">{c.category}</span>

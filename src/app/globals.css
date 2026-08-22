@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f1e6;
-  --foreground: #2c2620;
-  --muted: #8a8072;
+  --background: #f5efe0;
+  --foreground: #2c3e50;
+  --muted: #5b6b7d;
   --border: #ddd3bf;
-  --accent: #2f4a3a;
-  --accent-soft: rgba(47, 74, 58, 0.08);
+  --accent: #2c3e50;
+  --accent-soft: rgba(44, 62, 80, 0.08);
 }
 
 @theme inline {
@@ -26,4 +26,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Stamped/printed-label treatment for small-caps field labels (AMOUNT,
+   CATEGORY, PAYMENT, NOTE, etc.) — not for body text, buttons, or numbers. */
+.label-stamp {
+  font-family: var(--font-mono), ui-monospace, "SFMono-Regular", monospace;
+  letter-spacing: 0.1em;
+  font-weight: 600;
 }
