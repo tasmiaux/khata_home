@@ -7,16 +7,21 @@ digitized ledger book.
 
 ## Features
 
-- **Quick expense entry** — amount, category (12 household-specific options),
-  payment mode (Cash / UPI / Card), and an optional note.
-- **Inline edit & delete** — tap an entry to edit it right there in the list
-  (amount, category, payment, note), or delete it instantly.
+- **Quick expense entry** — amount, category (18 household-specific options,
+  grouped by home / food / lifestyle / health & education), payment mode
+  (Cash / UPI / Card), and an optional note.
+- **Inline edit & delete** — tap an entry to edit it right there in the list.
+  Deleting shows an "Undo" toast for 5 seconds before it's actually removed.
+- **Recurring expenses** — flag an expense "Repeat this monthly" (e.g. rent,
+  college fee) and it resurfaces as a one-tap quick-add suggestion once
+  logged for a new month.
 - **Date browser** — a calendar picker on Home lets you view any previous
   day's spending. The Dashboard's "Today" tab follows the same selected
   date, so both stay in sync.
 - **Dashboard** — category-wise breakdown with a donut chart; switch between
-  Today (live data), Weekly, and Monthly views.
-  > Weekly/Monthly currently use placeholder data — see the `TODO` in
+  Today (live data), Weekly, and Monthly views. Also shows a live
+  month-over-month comparison line for the top spending category.
+  > Weekly/Monthly tab data is still placeholder — see the `TODO` in
   > `src/app/dashboard/page.tsx` for the real aggregation query to build.
 - **Share with Family** — generate a read-only summary link from the
   Dashboard (this month's total, remaining budget if set, category
@@ -49,6 +54,7 @@ digitized ledger book.
    node scripts/migrate-ledger.mjs
    node scripts/migrate-user-auth.mjs
    node scripts/migrate-shares.mjs
+   node scripts/migrate-recurring.mjs
    ```
 4. Run the dev server:
    ```bash
