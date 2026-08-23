@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
   const amount = Number(body.amount);
   const { category, paymentMode, userId } = body;
   const note = typeof body.note === "string" ? body.note.trim() : "";
+  const isRecurring = body.isRecurring === true;
 
   if (!userId || typeof userId !== "string") {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -48,10 +49,10 @@ export async function POST(request: NextRequest) {
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO expenses (amount, category, payment_mode, note, user_id)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO expenses (amount, category, payment_mode, note, user_id, is_recurring)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id, amount, category, payment_mode, note, created_at`,
-    [amount, category, paymentMode, note || null, userId]
+    [amount, category, paymentMode, note || null, userId, isRecurring]
   );
 
   return NextResponse.json({ expense: rows[0] }, { status: 201 });

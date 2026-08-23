@@ -5,10 +5,10 @@ import { CATEGORIES, PAYMENT_MODES, type Category, type PaymentMode } from "@/li
 import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
 import Pill from "@/components/Pill";
-import { formatDateLabel, localDayRangeUtc } from "@/lib/date";
+import { formatDateLabel, localDayRangeUtc, localMonthRangeUtc } from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
-import { Calendar, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Pencil, Trash2, Check, Plus } from "lucide-react";
 
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c, icon: CATEGORY_ICON[c] }));
 const PAYMENT_OPTIONS = PAYMENT_MODES.map((p) => ({ value: p, label: p, icon: PAYMENT_ICON[p] }));
@@ -30,6 +30,13 @@ type EditDraft = {
   note: string;
 };
 
+type RecurringSuggestion = {
+  category: string;
+  amount: string;
+  payment_mode: string;
+  note: string | null;
+};
+
 export default function Home() {
   const { profile, isAuthenticated, ready } = useAuth();
   const { selectedDate, setSelectedDate, todayIso } = useSelectedDate();
@@ -44,10 +51,60 @@ export default function Home() {
   const [category, setCategory] = useState<Category>(CATEGORIES[0]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(PAYMENT_MODES[0]);
   const [note, setNote] = useState("");
+  const [repeatMonthly, setRepeatMonthly] = useState(false);
 
   const [editing, setEditing] = useState<EditDraft | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  const [pendingDelete, setPendingDelete] = useState<{
+    expense: Expense;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+
+  const [suggestions, setSuggestions] = useState<RecurringSuggestion[]>([]);
+  const [addingSuggestion, setAddingSuggestion] = useState<number | null>(null);
+
+  async function loadSuggestions() {
+    if (!profile) return;
+    const { from, to } = localMonthRangeUtc(todayIso);
+    const res = await fetch(
+      `/api/expenses/recurring-suggestions?userId=${profile.id}&monthFrom=${encodeURIComponent(from)}&monthTo=${encodeURIComponent(to)}`
+    );
+    const data = await res.json();
+    setSuggestions(data.suggestions ?? []);
+  }
+
+  useEffect(() => {
+    if (profile) loadSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  async function handleAddSuggestion(suggestion: RecurringSuggestion, index: number) {
+    if (!profile) return;
+    setAddingSuggestion(index);
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(suggestion.amount),
+          category: suggestion.category,
+          paymentMode: suggestion.payment_mode,
+          note: suggestion.note ?? "",
+          userId: profile.id,
+          isRecurring: true,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add expense");
+      setSuggestions((prev) => prev.filter((_, i) => i !== index));
+      if (isToday) await loadExpenses(selectedDate);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setAddingSuggestion(null);
+    }
+  }
 
   async function loadExpenses(date: string) {
     if (!profile) return;
@@ -68,16 +125,39 @@ export default function Home() {
 
   const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
-  async function handleDelete(id: number) {
+  async function finalizeDelete(expense: Expense) {
     if (!profile) return;
     try {
-      const res = await fetch(`/api/expenses/${id}?userId=${profile.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete expense");
-      setExpenses((prev) => prev.filter((e) => e.id !== id));
-      if (editing?.id === id) setEditing(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      await fetch(`/api/expenses/${expense.id}?userId=${profile.id}`, { method: "DELETE" });
+    } catch {
+      // best-effort: the row is already gone from the UI either way
     }
+  }
+
+  function handleDelete(expense: Expense) {
+    if (pendingDelete) {
+      clearTimeout(pendingDelete.timer);
+      finalizeDelete(pendingDelete.expense);
+    }
+    setExpenses((prev) => prev.filter((e) => e.id !== expense.id));
+    if (editing?.id === expense.id) setEditing(null);
+
+    const timer = setTimeout(() => {
+      finalizeDelete(expense);
+      setPendingDelete(null);
+    }, 5000);
+    setPendingDelete({ expense, timer });
+  }
+
+  function handleUndoDelete() {
+    if (!pendingDelete) return;
+    clearTimeout(pendingDelete.timer);
+    setExpenses((prev) =>
+      [...prev, pendingDelete.expense].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    );
+    setPendingDelete(null);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -96,7 +176,14 @@ export default function Home() {
       const res = await fetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: parsedAmount, category, paymentMode, note, userId: profile.id }),
+        body: JSON.stringify({
+          amount: parsedAmount,
+          category,
+          paymentMode,
+          note,
+          userId: profile.id,
+          isRecurring: repeatMonthly,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -104,7 +191,9 @@ export default function Home() {
       }
       setAmount("");
       setNote("");
+      setRepeatMonthly(false);
       await loadExpenses(selectedDate);
+      if (repeatMonthly) await loadSuggestions();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -205,6 +294,47 @@ export default function Home() {
         )}
       </header>
 
+      {isToday && suggestions.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="label-stamp text-xs text-muted uppercase">Recurring</h2>
+          <ul className="flex flex-col border border-border">
+            {suggestions.map((s, index) => {
+              const Icon = CATEGORY_ICON[s.category as Category];
+              return (
+                <li
+                  key={`${s.category}-${s.note ?? ""}`}
+                  className="flex min-h-12 items-center gap-3 border-b border-border px-4 py-3 last:border-b-0"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border">
+                    {Icon ? (
+                      <Icon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    )}
+                  </span>
+                  <div className="flex flex-1 flex-col">
+                    <span className="font-serif text-foreground">{s.category}</span>
+                    <span className="text-xs text-muted">
+                      {s.note ? `${s.note} · ` : ""}₹{Number(s.amount).toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddSuggestion(s, index)}
+                    disabled={addingSuggestion === index}
+                    aria-label={`Add ${s.category} expense`}
+                    className="flex items-center gap-1 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
+                  >
+                    <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                    {addingSuggestion === index ? "Adding..." : "Add"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="amount" className="label-stamp text-xs text-muted uppercase">
@@ -258,6 +388,23 @@ export default function Home() {
             className="border-b border-border bg-transparent pb-1.5 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
           />
         </div>
+
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={repeatMonthly}
+            onChange={(e) => setRepeatMonthly(e.target.checked)}
+            className="sr-only"
+          />
+          <span
+            className={`flex h-4 w-4 shrink-0 items-center justify-center border ${
+              repeatMonthly ? "border-accent bg-accent" : "border-foreground/30"
+            }`}
+          >
+            {repeatMonthly && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
+          </span>
+          Repeat this monthly
+        </label>
 
         {error && <p className="text-sm text-red-700">{error}</p>}
 
@@ -368,7 +515,7 @@ export default function Home() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(e.id)}
+                          onClick={() => handleDelete(e)}
                           aria-label="Delete expense"
                           className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-red-700"
                         >
@@ -391,6 +538,21 @@ export default function Home() {
           </ul>
         )}
       </div>
+
+      {pendingDelete && (
+        <div className="fixed inset-x-0 bottom-24 z-20 flex justify-center px-5">
+          <div className="flex items-center gap-4 border border-border bg-background px-4 py-3 shadow-lg">
+            <span className="text-sm text-foreground">Expense deleted</span>
+            <button
+              type="button"
+              onClick={handleUndoDelete}
+              className="text-sm font-medium text-accent underline underline-offset-2"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

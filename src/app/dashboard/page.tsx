@@ -5,7 +5,12 @@ import Link from "next/link";
 import { ArrowLeft, Share2, Copy, Check } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
 import type { Category } from "@/lib/constants";
-import { formatShortDate, localDayRangeUtc } from "@/lib/date";
+import {
+  formatShortDate,
+  localDayRangeUtc,
+  localMonthRangeUtc,
+  localPreviousMonthRangeUtc,
+} from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
 
@@ -20,6 +25,12 @@ type Expense = {
 
 type CategoryTotal = { category: string; total: number };
 type Tab = "today" | "weekly" | "monthly";
+type MonthComparison = {
+  category: string;
+  currentTotal: number;
+  previousTotal: number;
+  delta: number;
+};
 
 const TABS: { value: Tab; label: string }[] = [
   { value: "today", label: "Today" },
@@ -31,31 +42,41 @@ const TABS: { value: Tab; label: string }[] = [
 // without full date-range aggregation. TODO: replace with a real
 // /api/expenses/summary?range=week|month query once that's built.
 const MOCK_WEEKLY: Partial<Record<Category, number>> = {
-  "Groceries & Meat": 2100,
+  Groceries: 1400,
+  "Veggies & Fruits": 500,
+  Snacks: 200,
   Milk: 350,
   "Electricity Bill": 1200,
+  Gas: 400,
   Househelp: 800,
   Hangout: 1500,
   "Food Delivery": 900,
+  "Blinkit, Zepto": 350,
   Rides: 400,
-  Shopping: 650,
+  "Online Shopping": 650,
   Medicines: 300,
   "Home Essentials": 500,
   Miscellaneous: 200,
 };
 
 const MOCK_MONTHLY: Partial<Record<Category, number>> = {
-  "Groceries & Meat": 8200,
+  Rent: 15000,
+  Groceries: 5600,
+  "Veggies & Fruits": 2000,
+  Snacks: 800,
   Milk: 1400,
   "Electricity Bill": 3200,
+  Gas: 900,
   Househelp: 3200,
   Hangout: 4500,
   "Food Delivery": 2600,
+  "Blinkit, Zepto": 1400,
   Rides: 1600,
-  Shopping: 2100,
+  "Online Shopping": 2100,
   Medicines: 950,
   Repairs: 1200,
   "Home Essentials": 1800,
+  "College Fee": 5000,
   Miscellaneous: 600,
 };
 
@@ -73,6 +94,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [comparison, setComparison] = useState<MonthComparison | null>(null);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
@@ -104,6 +127,19 @@ export default function Dashboard() {
         }
       });
   }, [profile]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const current = localMonthRangeUtc(todayIso);
+    const previous = localPreviousMonthRangeUtc(todayIso);
+    const url =
+      `/api/expenses/month-comparison?userId=${profile.id}` +
+      `&currentFrom=${encodeURIComponent(current.from)}&currentTo=${encodeURIComponent(current.to)}` +
+      `&previousFrom=${encodeURIComponent(previous.from)}&previousTo=${encodeURIComponent(previous.to)}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => setComparison(data.comparison ?? null));
+  }, [profile, todayIso]);
 
   const shareLink = shareId && typeof window !== "undefined" ? `${window.location.origin}/shared/${shareId}` : null;
 
@@ -293,6 +329,16 @@ export default function Dashboard() {
       <header className="flex flex-col gap-1">
         <h1 className="font-serif text-3xl text-foreground">{heading}</h1>
         <p className="text-[15px] text-muted">{summary}</p>
+        {comparison && (
+          <p className="text-[15px] text-muted">
+            You&apos;ve spent{" "}
+            <span className="font-serif font-semibold text-accent">
+              ₹{Math.abs(comparison.delta).toFixed(2)}
+            </span>{" "}
+            {comparison.delta > 0 ? "more" : comparison.delta < 0 ? "less" : "the same"} on{" "}
+            {comparison.category} {comparison.delta === 0 ? "as" : "than"} last month.
+          </p>
+        )}
       </header>
 
       {isLoading ? (

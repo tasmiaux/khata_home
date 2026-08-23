@@ -24,6 +24,24 @@ export function localDayRangeUtc(iso: string): { from: string; to: string } {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
+// UTC instant bounds for the local calendar month containing the given
+// date. Same rationale as localDayRangeUtc — avoids server-timezone drift.
+export function localMonthRangeUtc(iso: string): { from: string; to: string } {
+  const d = parseISODate(iso);
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
+// UTC instant bounds for the local calendar month immediately before the
+// one containing the given date.
+export function localPreviousMonthRangeUtc(iso: string): { from: string; to: string } {
+  const d = parseISODate(iso);
+  const start = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  const end = new Date(d.getFullYear(), d.getMonth(), 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
 // e.g. "Friday, 15 August"
 export function formatDateLabel(iso: string): string {
   return parseISODate(iso).toLocaleDateString("en-GB", {

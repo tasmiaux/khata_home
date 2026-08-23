@@ -1,15 +1,26 @@
 export const CATEGORIES = [
-  "Groceries & Meat",
-  "Medicines",
-  "Hangout",
-  "Househelp",
-  "Milk",
-  "Electricity Bill",
-  "Repairs",
-  "Food Delivery",
-  "Rides",
-  "Shopping",
+  // Home / housing
+  "Rent",
   "Home Essentials",
+  "Electricity Bill",
+  "Gas",
+  "Repairs",
+  "Househelp",
+  // Food / groceries
+  "Groceries",
+  "Veggies & Fruits",
+  "Snacks",
+  "Milk",
+  "Food Delivery",
+  "Blinkit, Zepto",
+  // Lifestyle
+  "Hangout",
+  "Online Shopping",
+  "Rides",
+  // Health / education
+  "Medicines",
+  "College Fee",
+  // Catch-all
   "Miscellaneous",
 ] as const;
 
