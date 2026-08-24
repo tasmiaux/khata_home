@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import Avatar from "./Avatar";
 
+// The wordmark lives in the page content itself on Welcome (centered, above
+// the headline) instead of the top bar.
+const HIDDEN_ON = ["/welcome"];
+
 export default function TopBar() {
   const { isAuthenticated, profile } = useAuth();
+  const pathname = usePathname();
+
+  if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-3">

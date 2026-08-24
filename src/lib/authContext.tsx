@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { dedupeProfiles, getProfile, hasActiveSession, type Profile } from "./auth";
+import { getSession, type Profile } from "./auth";
 
 type AuthState = {
   profile: Profile | null;
   isAuthenticated: boolean;
   ready: boolean;
-  refresh: () => void;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -21,37 +21,25 @@ const AUTH_ONLY_PATHS = ["/welcome", "/login", "/register"];
 // Shared summary links must work for viewers with no Khata account at all.
 const PUBLIC_PREFIXES = ["/shared/"];
 
-// The "switch profile" flow needs to reach the login picker — and, from
-// there, registration — while already authenticated (so it can sign in as
-// someone else, or create a new profile without signing out first).
-// Exempt both from the redirect rules below.
-const NO_REDIRECT_PATHS = ["/login/switch", "/register/switch"];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [ready, setReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const isAuthenticated = !!profile;
 
-  const refresh = useCallback(() => {
-    const p = getProfile();
+  const refresh = useCallback(async () => {
+    const p = await getSession();
     setProfile(p);
-    setIsAuthenticated(hasActiveSession() && !!p);
   }, []);
 
   useEffect(() => {
-    dedupeProfiles().finally(() => {
-      refresh();
-      setReady(true);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    refresh().finally(() => setReady(true));
+  }, [refresh]);
 
   useEffect(() => {
     if (!ready) return;
     if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return;
-    if (NO_REDIRECT_PATHS.includes(pathname)) return;
 
     const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
     if (!isAuthenticated && !isAuthPage) {

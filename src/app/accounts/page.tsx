@@ -3,27 +3,15 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
-import { logout, resetDevice } from "@/lib/auth";
+import { logout } from "@/lib/auth";
 import Avatar from "@/components/Avatar";
 
 export default function AccountsPage() {
   const { profile, refresh } = useAuth();
 
-  function handleLogout() {
-    logout();
-    refresh();
-  }
-
-  function handleResetDevice() {
-    if (
-      !window.confirm(
-        "Reset this device? Every profile on this device will be forgotten. This can't be undone here — you'd need to register again."
-      )
-    ) {
-      return;
-    }
-    resetDevice();
-    refresh();
+  async function handleLogout() {
+    await logout();
+    await refresh();
   }
 
   if (!profile) return null;
@@ -40,18 +28,13 @@ export default function AccountsPage() {
 
       <header className="flex items-center gap-3">
         <Avatar name={profile.name} className="h-12 w-12 text-lg" />
-        <h1 className="font-serif text-3xl text-foreground">{profile.name}</h1>
+        <div className="flex flex-col">
+          <h1 className="font-serif text-3xl text-foreground">{profile.name}</h1>
+          <span className="text-sm text-muted">{profile.email}</span>
+        </div>
       </header>
 
       <ul className="flex flex-col border border-border">
-        <li className="border-b border-border">
-          <Link
-            href="/login/switch"
-            className="flex min-h-12 w-full items-center px-5 py-3 text-left font-serif text-foreground transition-colors hover:bg-accent-soft"
-          >
-            Switch profile
-          </Link>
-        </li>
         <li>
           <button
             type="button"
@@ -62,14 +45,6 @@ export default function AccountsPage() {
           </button>
         </li>
       </ul>
-
-      <button
-        type="button"
-        onClick={handleResetDevice}
-        className="w-fit text-sm font-medium text-red-700 underline underline-offset-2"
-      >
-        Reset this device
-      </button>
     </main>
   );
 }

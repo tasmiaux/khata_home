@@ -32,31 +32,41 @@ digitized ledger book.
   open it. Links are live — they always reflect current data, not a
   snapshot from when they were generated.
 - **Calculator** — a built-in quick-math tool for on-the-fly totals.
-- **Simple local login** — a name + 4-digit PIN flow (no backend auth, no
-  external provider) so the greeting is personalized and expenses stay
-  separated per profile. The PIN is hashed before it's ever stored. Supports
-  multiple profiles on the same device (e.g. different family members
-  sharing a phone), with an Accounts screen (tap your name in the top bar)
-  to switch profiles, log out, or reset the device. First-time and
+- **Sign in with Google** — one account, one profile, works from any
+  device. A real server-side session (signed, httpOnly cookie) backs it —
+  see `src/lib/session.ts` and `src/app/api/auth/`. First-time and
   logged-out visitors land on a Welcome screen ("Create your khata" /
-  "Log in") before reaching Register or Login; anyone with an active
-  session skips straight to Home.
+  "Log in") before reaching Register or Login, both of which are just a
+  single "Continue with Google" button; anyone with an active session
+  skips straight to Home. The Accounts screen (tap your name in the top
+  bar) shows your name/email and lets you log out.
 
 ## Tech stack
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS v4
 - Postgres via [Neon](https://neon.tech), accessed with `pg`
+- Google OAuth (Sign in with Google) + `jose` for signed session cookies
 - Lucide icons
 
 ## Getting started
 
 1. Create a free Postgres database at neon.tech and copy the connection string.
-2. Add it to `.env.local`:
+2. Create a Google OAuth Client ID (free, no billing) at
+   [console.cloud.google.com](https://console.cloud.google.com) →
+   *APIs & Services* → *Credentials* → *Create Credentials* → *OAuth client
+   ID* → Web application. Add `http://localhost:8080` as an authorized
+   JavaScript origin and `http://localhost:8080/api/auth/callback/google`
+   as an authorized redirect URI (add the production equivalents once you
+   know your deployed domain).
+3. Add all of this to `.env.local`:
    ```
    DATABASE_URL=postgresql://...
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   SESSION_SECRET=...   # generate with: openssl rand -base64 32
    ```
-3. Install dependencies and set up the schema:
+4. Install dependencies and set up the schema:
    ```bash
    npm install
    node scripts/init-db.mjs
@@ -66,25 +76,30 @@ digitized ledger book.
    node scripts/migrate-recurring.mjs
    node scripts/migrate-scope-expenses.mjs
    node scripts/migrate-share-period.mjs
+   node scripts/migrate-google-auth.mjs
    ```
    `migrate-scope-expenses.mjs` deletes any expense rows with no owner
    (pre-auth data) — run it only once you're sure nothing needs recovering
    from that state.
-4. Run the dev server:
+5. Run the dev server:
    ```bash
    npm run dev
    ```
    Runs on `http://localhost:8080` (see `package.json`'s `dev` script).
-5. Open the app and register a profile — that's the only "setup" needed to
-   start adding expenses.
+6. Open the app and sign in with Google — that's the only "setup" needed
+   to start adding expenses.
 
 ## Deploying
 
 1. Push this repo to GitHub.
 2. Import it into [Vercel](https://vercel.com/new).
-3. Add `DATABASE_URL` as an environment variable in the Vercel project
-   settings, using the same Neon connection string from `.env.local`.
-4. Deploy.
+3. Add `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and
+   `SESSION_SECRET` as environment variables in the Vercel project
+   settings.
+4. Add your deployed domain as an authorized JavaScript origin and
+   `https://<your-domain>/api/auth/callback/google` as an authorized
+   redirect URI in the Google Cloud Console credential from setup.
+5. Deploy.
 
 ## Project structure
 
@@ -92,28 +107,29 @@ digitized ledger book.
 - `src/app/dashboard/page.tsx` — spending breakdown, chart, sharing
 - `src/app/calculator/page.tsx` — calculator utility
 - `src/app/welcome/page.tsx` — entry point for logged-out visitors
-- `src/app/login/`, `src/app/register/` — local auth screens
-  (`src/app/login/switch/`, `src/app/register/switch/` reuse the same forms
-  while mid-switch-profile, still signed in)
-- `src/app/accounts/page.tsx` — current profile, switch profile, logout,
-  reset this device
+- `src/app/login/`, `src/app/register/` — each just a "Continue with
+  Google" button (Register also shows the duplicate-name error, if any)
+- `src/app/accounts/page.tsx` — current profile (name/email), logout
 - `src/app/shared/[id]/page.tsx` — public read-only summary page
+- `src/app/api/auth/google/` — starts the OAuth flow (redirects to Google)
+- `src/app/api/auth/callback/google/` — OAuth callback: verifies the ID
+  token, finds or creates the `profiles` row, starts the session
+- `src/app/api/auth/session/`, `src/app/api/auth/logout/` — session
+  read/clear, used by `authContext.tsx`
 - `src/app/api/expenses/` — REST API (GET/POST, PATCH/DELETE by id)
 - `src/app/api/shares/` — create/look up a share link
-- `src/app/api/profiles/[id]/` — wipe a profile's server-side data (used by
-  the duplicate-profile cleanup in `auth.ts`)
-- `src/lib/` — constants, category→icon/color maps, date helpers, auth
-  (`auth.ts`, `authContext.tsx`), shared date state (`selectedDateContext.tsx`)
+- `src/lib/session.ts` — signed httpOnly session cookie (`jose`)
+- `src/lib/googleAuth.ts` — Google OAuth code exchange + ID token
+  verification
+- `src/lib/` (rest) — constants, category→icon/color maps, date helpers,
+  auth client wrapper (`auth.ts`, `authContext.tsx`), shared date state
+  (`selectedDateContext.tsx`)
 - `src/components/` — reusable UI (custom Select dropdown, Pill tag,
   top bar, bottom nav)
 - `scripts/` — one-off DB setup/migration scripts
 
 ## Known limitations / next steps
 
-- Login is local-only (browser `localStorage`, no server-side auth) — the
-  PIN is hashed before storage, but this is still enough only to personalize
-  the app and separate data per profile, not real account security.
-  Profiles live in `localStorage`, so they don't follow you to a different
-  browser or device, and "Reset this device" only forgets local profiles —
-  it doesn't delete anything server-side.
 - Share links are live (recompute on every view), not frozen snapshots.
+- One Google account per profile — no way to link a second sign-in method
+  to the same profile.

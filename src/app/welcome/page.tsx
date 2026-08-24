@@ -3,9 +3,15 @@ import Link from "next/link";
 export default function WelcomePage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-10 px-5 py-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-3xl text-foreground">Your household, your ledger.</h1>
-        <p className="text-[15px] text-muted">Track cash and UPI spending, the simple way.</p>
+      <header className="flex flex-col items-center gap-4 text-center">
+        <div className="flex items-baseline gap-0.5 font-hand text-2xl leading-none">
+          <span className="text-accent">खा</span>
+          <span className="text-foreground">ta</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="font-serif text-3xl text-foreground">Your household, your ledger.</h1>
+          <p className="text-[15px] text-muted">Track cash and UPI spending, the simple way.</p>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3">
