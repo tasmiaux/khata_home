@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const { rows: currentRows } = await pool.query(
     `SELECT category, SUM(amount) AS total
      FROM expenses
-     WHERE created_at >= $1 AND created_at < $2 AND (user_id = $3 OR user_id IS NULL)
+     WHERE created_at >= $1 AND created_at < $2 AND user_id = $3
      GROUP BY category
      ORDER BY total DESC
      LIMIT 1`,
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     `SELECT COALESCE(SUM(amount), 0) AS total
      FROM expenses
      WHERE category = $1 AND created_at >= $2 AND created_at < $3
-       AND (user_id = $4 OR user_id IS NULL)`,
+       AND user_id = $4`,
     [topCategory, previousFrom, previousTo, userId]
   );
 

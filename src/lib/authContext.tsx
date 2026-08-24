@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { getProfile, hasActiveSession, type Profile } from "./auth";
+import { getProfile, getProfiles, hasActiveSession, type Profile } from "./auth";
 
 type AuthState = {
   profile: Profile | null;
@@ -20,6 +20,11 @@ const AUTH_ONLY_PATHS = ["/login", "/register"];
 // Always accessible, regardless of auth state — never redirected either way.
 // Shared summary links must work for viewers with no Khata account at all.
 const PUBLIC_PREFIXES = ["/shared/"];
+
+// The "switch profile" flow needs to reach the login picker while already
+// authenticated (so it can log in as someone else) — exempt it from both
+// redirect rules below.
+const NO_REDIRECT_PATHS = ["/login/switch"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,10 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return;
+    if (NO_REDIRECT_PATHS.includes(pathname)) return;
 
     const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
     if (!isAuthenticated && !isAuthPage) {
-      router.replace(getProfile() ? "/login" : "/register");
+      router.replace(getProfiles().length > 0 ? "/login" : "/register");
     } else if (isAuthenticated && isAuthPage) {
       router.replace("/");
     }

@@ -1,49 +1,23 @@
-// Local-only mock auth: no backend, no password hashing, no real security.
-// Just enough to personalize the greeting and tag expenses with a stable
-// per-profile id so data stays separated between profiles on this device.
-// Supports multiple profiles per device — each with its own id, so its
-// expenses/budget/share link stay scoped to that profile only.
+// Local-only auth: no backend, no server session. Profiles live in
+// localStorage, each tagged with a stable id used to scope that profile's
+// expenses/shares server-side. The PIN is hashed (SHA-256 + per-profile
+// salt) before it's ever written to localStorage — this isn't meant to
+// resist an attacker with access to the device's storage, just to avoid
+// keeping the PIN itself in the clear.
 
 export type Profile = {
   id: string;
   name: string;
-  email?: string;
-  password?: string;
+  pinHash: string;
+  pinSalt: string;
 };
 
 const PROFILES_KEY = "khata_profiles";
 const ACTIVE_KEY = "khata_active_profile";
 const LAST_ACTIVE_KEY = "khata_last_active_profile";
 
-// Pre-multi-profile storage shape — migrated once, then removed.
-const LEGACY_PROFILE_KEY = "khata_profile";
-const LEGACY_SESSION_KEY = "khata_session";
-
-function migrateLegacyProfile() {
-  if (typeof window === "undefined") return;
-  if (localStorage.getItem(PROFILES_KEY)) return;
-
-  const legacyRaw = localStorage.getItem(LEGACY_PROFILE_KEY);
-  if (!legacyRaw) return;
-
-  try {
-    const legacyProfile = JSON.parse(legacyRaw) as Profile;
-    localStorage.setItem(PROFILES_KEY, JSON.stringify([legacyProfile]));
-    if (localStorage.getItem(LEGACY_SESSION_KEY) === "active") {
-      localStorage.setItem(ACTIVE_KEY, legacyProfile.id);
-      localStorage.setItem(LAST_ACTIVE_KEY, legacyProfile.id);
-    }
-  } catch {
-    // malformed legacy data — nothing to migrate
-  } finally {
-    localStorage.removeItem(LEGACY_PROFILE_KEY);
-    localStorage.removeItem(LEGACY_SESSION_KEY);
-  }
-}
-
 function readProfiles(): Profile[] {
   if (typeof window === "undefined") return [];
-  migrateLegacyProfile();
   try {
     const raw = localStorage.getItem(PROFILES_KEY);
     return raw ? (JSON.parse(raw) as Profile[]) : [];
@@ -59,6 +33,18 @@ function writeProfiles(profiles: Profile[]) {
 function setActive(id: string) {
   localStorage.setItem(ACTIVE_KEY, id);
   localStorage.setItem(LAST_ACTIVE_KEY, id);
+}
+
+export async function hashPin(pin: string, salt: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${salt}:${pin}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function isValidPin(pin: string): boolean {
+  return /^\d{4}$/.test(pin);
 }
 
 export function getProfiles(): Profile[] {
@@ -86,8 +72,10 @@ export function hasActiveSession(): boolean {
   return getProfile() !== null;
 }
 
-export function register(input: { name: string; email?: string; password?: string }): Profile {
-  const profile: Profile = { id: crypto.randomUUID(), ...input };
+export async function register(input: { name: string; pin: string }): Promise<Profile> {
+  const pinSalt = crypto.randomUUID();
+  const pinHash = await hashPin(input.pin, pinSalt);
+  const profile: Profile = { id: crypto.randomUUID(), name: input.name, pinHash, pinSalt };
   const profiles = readProfiles();
   profiles.push(profile);
   writeProfiles(profiles);
@@ -95,16 +83,25 @@ export function register(input: { name: string; email?: string; password?: strin
   return profile;
 }
 
-export function login(profileId: string, name: string, password: string): boolean {
+export async function login(profileId: string, name: string, pin: string): Promise<boolean> {
   const profile = readProfiles().find((p) => p.id === profileId);
   if (!profile) return false;
   const nameMatches = profile.name.trim().toLowerCase() === name.trim().toLowerCase();
-  const passwordMatches = !profile.password || profile.password === password;
-  if (!nameMatches || !passwordMatches) return false;
+  const pinMatches = (await hashPin(pin, profile.pinSalt)) === profile.pinHash;
+  if (!nameMatches || !pinMatches) return false;
   setActive(profile.id);
   return true;
 }
 
 export function logout() {
   localStorage.removeItem(ACTIVE_KEY);
+}
+
+// Forgets every profile on this device — the local equivalent of signing
+// everyone out and wiping the profile picker. Server-side data for those
+// profile ids is untouched (just no longer reachable from this device).
+export function resetDevice() {
+  localStorage.removeItem(PROFILES_KEY);
+  localStorage.removeItem(ACTIVE_KEY);
+  localStorage.removeItem(LAST_ACTIVE_KEY);
 }

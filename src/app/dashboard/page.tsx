@@ -99,7 +99,7 @@ export default function Dashboard() {
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
-  const [shareBudget, setShareBudget] = useState("");
+  const [sharePeriod, setSharePeriod] = useState<Tab>("today");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -121,10 +121,7 @@ export default function Dashboard() {
     fetch(`/api/shares?userId=${profile.id}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.share) {
-          setShareId(data.share.id);
-          setShareBudget(data.share.budget !== null ? String(data.share.budget) : "");
-        }
+        if (data.share) setShareId(data.share.id);
       });
   }, [profile]);
 
@@ -154,7 +151,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           userId: profile.id,
           ownerName: profile.name,
-          budget: shareBudget.trim() === "" ? null : Number(shareBudget),
+          period: sharePeriod,
         }),
       });
       if (!res.ok) {
@@ -245,7 +242,12 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 border border-border px-5 py-4">
         <button
           type="button"
-          onClick={() => setShareOpen((o) => !o)}
+          onClick={() =>
+            setShareOpen((o) => {
+              if (!o) setSharePeriod(activeTab);
+              return !o;
+            })
+          }
           className="flex items-center gap-2 text-sm font-medium text-foreground"
         >
           <Share2 className="h-4 w-4 text-accent" strokeWidth={2} />
@@ -255,23 +257,23 @@ export default function Dashboard() {
         {shareOpen && (
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="shareBudget"
-                className="label-stamp text-xs text-muted uppercase"
-              >
-                Monthly Budget <span className="normal-case text-muted/60">(optional)</span>
-              </label>
-              <input
-                id="shareBudget"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                placeholder="₹0.00"
-                value={shareBudget}
-                onChange={(e) => setShareBudget(e.target.value)}
-                className="border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
-              />
+              <span className="label-stamp text-xs text-muted uppercase">Period</span>
+              <div className="flex items-center gap-1 rounded-full border border-border p-1.5">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setSharePeriod(tab.value)}
+                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                      sharePeriod === tab.value
+                        ? "bg-accent text-background"
+                        : "text-muted hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {shareError && <p className="text-sm text-red-700">{shareError}</p>}

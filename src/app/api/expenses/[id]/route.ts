@@ -27,7 +27,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const { rows } = await pool.query(
     `UPDATE expenses
      SET amount = $1, category = $2, payment_mode = $3, note = $4
-     WHERE id = $5 AND (user_id = $6 OR user_id IS NULL)
+     WHERE id = $5 AND user_id = $6
      RETURNING id, amount, category, payment_mode, note, created_at`,
     [amount, category, paymentMode, note || null, id, userId]
   );
@@ -46,7 +46,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   }
 
   const { rowCount } = await pool.query(
-    `DELETE FROM expenses WHERE id = $1 AND (user_id = $2 OR user_id IS NULL)`,
+    `DELETE FROM expenses WHERE id = $1 AND user_id = $2`,
     [id, userId]
   );
 

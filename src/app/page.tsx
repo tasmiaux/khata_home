@@ -5,7 +5,12 @@ import { CATEGORIES, PAYMENT_MODES, type Category, type PaymentMode } from "@/li
 import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
 import Pill from "@/components/Pill";
-import { formatDateLabel, localDayRangeUtc, localMonthRangeUtc } from "@/lib/date";
+import {
+  formatDateLabel,
+  isoTimestampForLocalDate,
+  localDayRangeUtc,
+  localMonthRangeUtc,
+} from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
 import { Calendar, Pencil, Trash2, Check, Plus } from "lucide-react";
@@ -183,6 +188,7 @@ export default function Home() {
           note,
           userId: profile.id,
           isRecurring: repeatMonthly,
+          createdAt: isoTimestampForLocalDate(selectedDate),
         }),
       });
       if (!res.ok) {
@@ -336,6 +342,11 @@ export default function Home() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
+        {!isToday && (
+          <p className="text-xs font-medium tracking-wide text-accent uppercase">
+            Adding for {formatDateLabel(selectedDate)}
+          </p>
+        )}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="amount" className="label-stamp text-xs text-muted uppercase">
             Amount

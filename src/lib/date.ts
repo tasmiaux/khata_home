@@ -42,6 +42,28 @@ export function localPreviousMonthRangeUtc(iso: string): { from: string; to: str
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
+// UTC instant bounds for the Monday-Sunday calendar week containing the
+// given date. Same rationale as localDayRangeUtc/localMonthRangeUtc.
+export function localWeekRangeUtc(iso: string): { from: string; to: string } {
+  const d = parseISODate(iso);
+  const mondayOffset = (d.getDay() + 6) % 7; // 0 = Monday ... 6 = Sunday
+  const start = new Date(d);
+  start.setDate(d.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
+// Attaches the current wall-clock time to a "YYYY-MM-DD" local date, so a
+// backdated expense still sorts sensibly within its day instead of landing
+// at local midnight. Returns a UTC ISO string.
+export function isoTimestampForLocalDate(iso: string): string {
+  const now = new Date();
+  const d = parseISODate(iso);
+  d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+  return d.toISOString();
+}
+
 // e.g. "Friday, 15 August"
 export function formatDateLabel(iso: string): string {
   return parseISODate(iso).toLocaleDateString("en-GB", {

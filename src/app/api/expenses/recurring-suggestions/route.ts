@@ -25,13 +25,13 @@ export async function GET(request: NextRequest) {
        SELECT DISTINCT ON (category, COALESCE(note, ''))
          category, amount, payment_mode, note
        FROM expenses
-       WHERE (user_id = $1 OR user_id IS NULL) AND is_recurring = true
+       WHERE user_id = $1 AND is_recurring = true
        ORDER BY category, COALESCE(note, ''), created_at DESC
      ),
      logged_this_month AS (
        SELECT DISTINCT category, COALESCE(note, '') AS note_key
        FROM expenses
-       WHERE (user_id = $1 OR user_id IS NULL)
+       WHERE user_id = $1
          AND created_at >= $2 AND created_at < $3
      )
      SELECT lr.category, lr.amount, lr.payment_mode, lr.note
