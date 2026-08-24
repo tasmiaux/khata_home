@@ -10,6 +10,7 @@ import {
   localDayRangeUtc,
   localMonthRangeUtc,
   localPreviousMonthRangeUtc,
+  localWeekRangeUtc,
 } from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
@@ -38,48 +39,6 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "monthly", label: "Monthly" },
 ];
 
-// Placeholder numbers for the Weekly/Monthly tabs so the UI is demoable
-// without full date-range aggregation. TODO: replace with a real
-// /api/expenses/summary?range=week|month query once that's built.
-const MOCK_WEEKLY: Partial<Record<Category, number>> = {
-  Groceries: 1400,
-  "Veggies & Fruits": 500,
-  Snacks: 200,
-  Milk: 350,
-  "Electricity Bill": 1200,
-  Gas: 400,
-  Househelp: 800,
-  Hangout: 1500,
-  "Food Delivery": 900,
-  "Blinkit, Zepto": 350,
-  Rides: 400,
-  "Online Shopping": 650,
-  Medicines: 300,
-  "Home Essentials": 500,
-  Miscellaneous: 200,
-};
-
-const MOCK_MONTHLY: Partial<Record<Category, number>> = {
-  Rent: 15000,
-  Groceries: 5600,
-  "Veggies & Fruits": 2000,
-  Snacks: 800,
-  Milk: 1400,
-  "Electricity Bill": 3200,
-  Gas: 900,
-  Househelp: 3200,
-  Hangout: 4500,
-  "Food Delivery": 2600,
-  "Blinkit, Zepto": 1400,
-  Rides: 1600,
-  "Online Shopping": 2100,
-  Medicines: 950,
-  Repairs: 1200,
-  "Home Essentials": 1800,
-  "College Fee": 5000,
-  Miscellaneous: 600,
-};
-
 const SIZE = 200;
 const STROKE = 26;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -107,14 +66,19 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profile) return;
     setLoading(true);
-    const { from, to } = localDayRangeUtc(selectedDate);
+    const { from, to } =
+      activeTab === "today"
+        ? localDayRangeUtc(selectedDate)
+        : activeTab === "weekly"
+          ? localWeekRangeUtc(selectedDate)
+          : localMonthRangeUtc(selectedDate);
     fetch(`/api/expenses?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&userId=${profile.id}`)
       .then((res) => res.json())
       .then((data) => {
         setExpenses(data.expenses ?? []);
         setLoading(false);
       });
-  }, [selectedDate, profile]);
+  }, [selectedDate, profile, activeTab]);
 
   useEffect(() => {
     if (!profile) return;
@@ -178,21 +142,15 @@ export default function Dashboard() {
     }
   }
 
-  const byCategory: CategoryTotal[] =
-    activeTab === "today"
-      ? Object.values(
-          expenses.reduce<Record<string, CategoryTotal>>((acc, e) => {
-            acc[e.category] ??= { category: e.category, total: 0 };
-            acc[e.category].total += Number(e.amount);
-            return acc;
-          }, {})
-        ).sort((a, b) => b.total - a.total)
-      : Object.entries(activeTab === "weekly" ? MOCK_WEEKLY : MOCK_MONTHLY)
-          .map(([category, total]) => ({ category, total: total ?? 0 }))
-          .sort((a, b) => b.total - a.total);
+  const byCategory: CategoryTotal[] = Object.values(
+    expenses.reduce<Record<string, CategoryTotal>>((acc, e) => {
+      acc[e.category] ??= { category: e.category, total: 0 };
+      acc[e.category].total += Number(e.amount);
+      return acc;
+    }, {})
+  ).sort((a, b) => b.total - a.total);
 
   const total = byCategory.reduce((sum, c) => sum + c.total, 0);
-  const isLoading = activeTab === "today" && loading;
 
   const heading =
     activeTab === "today"
@@ -343,7 +301,7 @@ export default function Dashboard() {
         )}
       </header>
 
-      {isLoading ? (
+      {loading ? (
         <p className="py-3 text-sm text-muted/70">Loading...</p>
       ) : byCategory.length === 0 ? (
         <p className="py-3 text-sm text-muted/70">No expenses yet.</p>

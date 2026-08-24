@@ -6,14 +6,16 @@ import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
 import Pill from "@/components/Pill";
 import {
+  formatChipDate,
   formatDateLabel,
   isoTimestampForLocalDate,
   localDayRangeUtc,
   localMonthRangeUtc,
+  toISODate,
 } from "@/lib/date";
 import { useSelectedDate } from "@/lib/selectedDateContext";
 import { useAuth } from "@/lib/authContext";
-import { Calendar, Pencil, Trash2, Check, Plus } from "lucide-react";
+import { Calendar, ChevronDown, Pencil, Trash2, Check, Plus } from "lucide-react";
 
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c, icon: CATEGORY_ICON[c] }));
 const PAYMENT_OPTIONS = PAYMENT_MODES.map((p) => ({ value: p, label: p, icon: PAYMENT_ICON[p] }));
@@ -33,6 +35,8 @@ type EditDraft = {
   category: Category;
   paymentMode: PaymentMode;
   note: string;
+  date: string;
+  originalDate: string;
 };
 
 type RecurringSuggestion = {
@@ -209,6 +213,7 @@ export default function Home() {
 
   function startEdit(expense: Expense) {
     setEditError(null);
+    const date = toISODate(new Date(expense.created_at));
     setEditing({
       id: expense.id,
       amount: String(expense.amount),
@@ -217,6 +222,8 @@ export default function Home() {
         : CATEGORIES[0],
       paymentMode: expense.payment_mode as PaymentMode,
       note: expense.note ?? "",
+      date,
+      originalDate: date,
     });
   }
 
@@ -240,6 +247,10 @@ export default function Home() {
           paymentMode: editing.paymentMode,
           note: editing.note,
           userId: profile.id,
+          createdAt:
+            editing.date === editing.originalDate
+              ? undefined
+              : isoTimestampForLocalDate(editing.date),
         }),
       });
       if (!res.ok) {
@@ -342,11 +353,20 @@ export default function Home() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
-        {!isToday && (
-          <p className="text-xs font-medium tracking-wide text-accent uppercase">
-            Adding for {formatDateLabel(selectedDate)}
-          </p>
-        )}
+        <div className="relative w-fit">
+          <input
+            type="date"
+            value={selectedDate}
+            max={todayIso}
+            onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+            aria-label="Change the date this expense is added for"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+          <span className="pointer-events-none flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
+            {formatChipDate(selectedDate)}
+            <ChevronDown className="h-3 w-3" strokeWidth={2} />
+          </span>
+        </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="amount" className="label-stamp text-xs text-muted uppercase">
             Amount
@@ -445,6 +465,22 @@ export default function Home() {
                 <li key={e.id} className="min-h-12 border-t border-border py-3 last:border-b">
                   {isRowEditing ? (
                     <div className="flex flex-col gap-3">
+                      <div className="relative w-fit">
+                        <input
+                          type="date"
+                          value={editing.date}
+                          max={todayIso}
+                          onChange={(ev) =>
+                            ev.target.value && setEditing({ ...editing, date: ev.target.value })
+                          }
+                          aria-label="Change this expense's date"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        />
+                        <span className="pointer-events-none flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
+                          {formatChipDate(editing.date)}
+                          <ChevronDown className="h-3 w-3" strokeWidth={2} />
+                        </span>
+                      </div>
                       <div className="flex gap-2">
                         <input
                           type="number"

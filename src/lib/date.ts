@@ -64,6 +64,15 @@ export function isoTimestampForLocalDate(iso: string): string {
   return d.toISOString();
 }
 
+// e.g. "Tue, 20 Aug" — compact form for a tappable date chip.
+export function formatChipDate(iso: string): string {
+  return parseISODate(iso).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
 // e.g. "Friday, 15 August"
 export function formatDateLabel(iso: string): string {
   return parseISODate(iso).toLocaleDateString("en-GB", {

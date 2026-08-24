@@ -10,6 +10,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const amount = Number(body.amount);
   const { category, paymentMode, userId } = body;
   const note = typeof body.note === "string" ? body.note.trim() : "";
+  const createdAt = typeof body.createdAt === "string" ? body.createdAt : null;
 
   if (!userId || typeof userId !== "string") {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -23,13 +24,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!(PAYMENT_MODES as readonly string[]).includes(paymentMode)) {
     return NextResponse.json({ error: "Invalid payment mode" }, { status: 400 });
   }
+  if (createdAt !== null && Number.isNaN(Date.parse(createdAt))) {
+    return NextResponse.json({ error: "createdAt must be a valid timestamp" }, { status: 400 });
+  }
 
   const { rows } = await pool.query(
     `UPDATE expenses
-     SET amount = $1, category = $2, payment_mode = $3, note = $4
-     WHERE id = $5 AND user_id = $6
+     SET amount = $1, category = $2, payment_mode = $3, note = $4, created_at = COALESCE($5, created_at)
+     WHERE id = $6 AND user_id = $7
      RETURNING id, amount, category, payment_mode, note, created_at`,
-    [amount, category, paymentMode, note || null, id, userId]
+    [amount, category, paymentMode, note || null, createdAt, id, userId]
   );
 
   if (rows.length === 0) {

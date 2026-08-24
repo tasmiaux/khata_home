@@ -21,10 +21,11 @@ const AUTH_ONLY_PATHS = ["/login", "/register"];
 // Shared summary links must work for viewers with no Khata account at all.
 const PUBLIC_PREFIXES = ["/shared/"];
 
-// The "switch profile" flow needs to reach the login picker while already
-// authenticated (so it can log in as someone else) — exempt it from both
-// redirect rules below.
-const NO_REDIRECT_PATHS = ["/login/switch"];
+// The "switch profile" flow needs to reach the login picker — and, from
+// there, registration — while already authenticated (so it can sign in as
+// someone else, or create a new profile without signing out first).
+// Exempt both from the redirect rules below.
+const NO_REDIRECT_PATHS = ["/login/switch", "/register/switch"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);

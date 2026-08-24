@@ -67,11 +67,13 @@ export default function LoginForm({ forceSwitch = false }: { forceSwitch?: boole
     }
   }
 
+  const registerHref = forceSwitch ? "/register/switch" : "/register";
+
   function handleSwitchProfile() {
     if (profiles.length > 1) {
       setMode("picker");
     } else {
-      router.push("/register");
+      router.push(registerHref);
     }
   }
 
@@ -91,7 +93,7 @@ export default function LoginForm({ forceSwitch = false }: { forceSwitch?: boole
           </p>
         </header>
         <Link
-          href="/register"
+          href={registerHref}
           className="w-fit bg-accent px-4 py-2.5 font-medium text-background transition-colors hover:bg-accent/90"
         >
           Create one
@@ -124,7 +126,7 @@ export default function LoginForm({ forceSwitch = false }: { forceSwitch?: boole
         </ul>
 
         <Link
-          href="/register"
+          href={registerHref}
           className="text-center text-sm text-accent underline underline-offset-2"
         >
           Register a new profile
