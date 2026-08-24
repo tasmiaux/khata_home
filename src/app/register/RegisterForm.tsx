@@ -36,6 +36,8 @@ export default function RegisterForm() {
       await register({ name: name.trim(), pin });
       refresh();
       router.replace("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSubmitting(false);
     }

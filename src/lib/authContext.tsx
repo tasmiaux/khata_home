@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { getProfile, getProfiles, hasActiveSession, type Profile } from "./auth";
+import { dedupeProfiles, getProfile, getProfiles, hasActiveSession, type Profile } from "./auth";
 
 type AuthState = {
   profile: Profile | null;
@@ -41,8 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-    setReady(true);
+    dedupeProfiles().finally(() => {
+      refresh();
+      setReady(true);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

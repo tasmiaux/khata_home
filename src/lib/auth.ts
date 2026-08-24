@@ -73,10 +73,18 @@ export function hasActiveSession(): boolean {
 }
 
 export async function register(input: { name: string; pin: string }): Promise<Profile> {
+  const name = input.name.trim();
+  const profiles = readProfiles();
+  const duplicate = profiles.some((p) => p.name.trim().toLowerCase() === name.toLowerCase());
+  if (duplicate) {
+    throw new Error(
+      `A profile named '${name}' already exists on this device. Log in instead, or pick a different name.`
+    );
+  }
+
   const pinSalt = crypto.randomUUID();
   const pinHash = await hashPin(input.pin, pinSalt);
-  const profile: Profile = { id: crypto.randomUUID(), name: input.name, pinHash, pinSalt };
-  const profiles = readProfiles();
+  const profile: Profile = { id: crypto.randomUUID(), name, pinHash, pinSalt };
   profiles.push(profile);
   writeProfiles(profiles);
   setActive(profile.id);
@@ -104,4 +112,48 @@ export function resetDevice() {
   localStorage.removeItem(PROFILES_KEY);
   localStorage.removeItem(ACTIVE_KEY);
   localStorage.removeItem(LAST_ACTIVE_KEY);
+}
+
+// One-time cleanup for profiles that predate the duplicate-name guard in
+// register(): collapses profiles sharing a name (case-insensitive) down to
+// the earliest one (first in storage order = first created), and wipes the
+// removed duplicates' server-side expenses/shares. If the active or
+// last-active session pointed at a removed duplicate, it's re-pointed at
+// the surviving profile with that name so no session is left dangling.
+export async function dedupeProfiles(): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const profiles = readProfiles();
+  const kept = new Map<string, Profile>();
+  const removed: Profile[] = [];
+  for (const p of profiles) {
+    const key = p.name.trim().toLowerCase();
+    if (kept.has(key)) {
+      removed.push(p);
+    } else {
+      kept.set(key, p);
+    }
+  }
+  if (removed.length === 0) return;
+
+  writeProfiles(Array.from(kept.values()));
+
+  const removedIds = new Set(removed.map((p) => p.id));
+  const repoint = (key: string) => {
+    const id = localStorage.getItem(key);
+    if (!id || !removedIds.has(id)) return;
+    const removedProfile = removed.find((p) => p.id === id);
+    const replacement = removedProfile && kept.get(removedProfile.name.trim().toLowerCase());
+    if (replacement) {
+      localStorage.setItem(key, replacement.id);
+    } else {
+      localStorage.removeItem(key);
+    }
+  };
+  repoint(ACTIVE_KEY);
+  repoint(LAST_ACTIVE_KEY);
+
+  await Promise.allSettled(
+    removed.map((p) => fetch(`/api/profiles/${p.id}`, { method: "DELETE" }))
+  );
 }
