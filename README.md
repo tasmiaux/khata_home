@@ -37,7 +37,10 @@ digitized ledger book.
   separated per profile. The PIN is hashed before it's ever stored. Supports
   multiple profiles on the same device (e.g. different family members
   sharing a phone), with an Accounts screen (tap your name in the top bar)
-  to switch profiles, log out, or reset the device.
+  to switch profiles, log out, or reset the device. First-time and
+  logged-out visitors land on a Welcome screen ("Create your khata" /
+  "Log in") before reaching Register or Login; anyone with an active
+  session skips straight to Home.
 
 ## Tech stack
 
@@ -88,13 +91,17 @@ digitized ledger book.
 - `src/app/page.tsx` — Home (add/inline-edit/delete, date browsing)
 - `src/app/dashboard/page.tsx` — spending breakdown, chart, sharing
 - `src/app/calculator/page.tsx` — calculator utility
+- `src/app/welcome/page.tsx` — entry point for logged-out visitors
 - `src/app/login/`, `src/app/register/` — local auth screens
-  (`src/app/login/switch/` reuses the login picker to switch profiles)
+  (`src/app/login/switch/`, `src/app/register/switch/` reuse the same forms
+  while mid-switch-profile, still signed in)
 - `src/app/accounts/page.tsx` — current profile, switch profile, logout,
   reset this device
 - `src/app/shared/[id]/page.tsx` — public read-only summary page
 - `src/app/api/expenses/` — REST API (GET/POST, PATCH/DELETE by id)
 - `src/app/api/shares/` — create/look up a share link
+- `src/app/api/profiles/[id]/` — wipe a profile's server-side data (used by
+  the duplicate-profile cleanup in `auth.ts`)
 - `src/lib/` — constants, category→icon/color maps, date helpers, auth
   (`auth.ts`, `authContext.tsx`), shared date state (`selectedDateContext.tsx`)
 - `src/components/` — reusable UI (custom Select dropdown, Pill tag,

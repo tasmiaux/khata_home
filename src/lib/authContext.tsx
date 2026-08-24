@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { dedupeProfiles, getProfile, getProfiles, hasActiveSession, type Profile } from "./auth";
+import { dedupeProfiles, getProfile, hasActiveSession, type Profile } from "./auth";
 
 type AuthState = {
   profile: Profile | null;
@@ -14,8 +14,8 @@ type AuthState = {
 const AuthContext = createContext<AuthState | null>(null);
 
 // Redirect away from these if already authenticated (no reason to see the
-// login/register form while signed in).
-const AUTH_ONLY_PATHS = ["/login", "/register"];
+// welcome/login/register screens while signed in).
+const AUTH_ONLY_PATHS = ["/welcome", "/login", "/register"];
 
 // Always accessible, regardless of auth state — never redirected either way.
 // Shared summary links must work for viewers with no Khata account at all.
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
     if (!isAuthenticated && !isAuthPage) {
-      router.replace(getProfiles().length > 0 ? "/login" : "/register");
+      router.replace("/welcome");
     } else if (isAuthenticated && isAuthPage) {
       router.replace("/");
     }
