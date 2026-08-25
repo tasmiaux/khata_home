@@ -5,9 +5,14 @@ import { cookies } from "next/headers";
 const SESSION_COOKIE = "khata_session";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-const secretKey = process.env.SESSION_SECRET;
-if (!secretKey) throw new Error("SESSION_SECRET is not set");
-const encodedKey = new TextEncoder().encode(secretKey);
+// Read lazily (inside functions, not at module load) so a missing env var
+// only breaks auth requests, not the entire build — Next.js evaluates
+// every route module during "Collecting page data" at build time.
+function getEncodedKey(): Uint8Array {
+  const secretKey = process.env.SESSION_SECRET;
+  if (!secretKey) throw new Error("SESSION_SECRET is not set");
+  return new TextEncoder().encode(secretKey);
+}
 
 type SessionPayload = {
   profileId: string;
@@ -18,12 +23,12 @@ async function encrypt(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_MS / 1000}s`)
-    .sign(encodedKey);
+    .sign(getEncodedKey());
 }
 
 async function decrypt(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, encodedKey, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify(token, getEncodedKey(), { algorithms: ["HS256"] });
     if (typeof payload.profileId !== "string") return null;
     return { profileId: payload.profileId };
   } catch {

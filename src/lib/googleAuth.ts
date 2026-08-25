@@ -5,10 +5,16 @@ const GOOGLE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")
 );
 
-const clientId = process.env.GOOGLE_CLIENT_ID;
-const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-if (!clientId || !clientSecret) {
-  throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set");
+// Read lazily (inside functions, not at module load) so a missing env var
+// only breaks auth requests, not the entire build — Next.js evaluates
+// every route module during "Collecting page data" at build time.
+function getGoogleCredentials(): { clientId: string; clientSecret: string } {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set");
+  }
+  return { clientId, clientSecret };
 }
 
 // Matches the redirect URI registered in Google Cloud Console.
@@ -17,8 +23,9 @@ function redirectUri(origin: string): string {
 }
 
 export function getGoogleAuthUrl(origin: string, state: string): string {
+  const { clientId } = getGoogleCredentials();
   const params = new URLSearchParams({
-    client_id: clientId!,
+    client_id: clientId,
     redirect_uri: redirectUri(origin),
     response_type: "code",
     scope: "openid email profile",
@@ -38,12 +45,13 @@ export async function exchangeCodeForIdentity(
   origin: string,
   code: string
 ): Promise<GoogleIdentity> {
+  const { clientId, clientSecret } = getGoogleCredentials();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: clientId!,
-      client_secret: clientSecret!,
+      client_id: clientId,
+      client_secret: clientSecret,
       code,
       redirect_uri: redirectUri(origin),
       grant_type: "authorization_code",
