@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { exchangeCodeForIdentity } from "@/lib/googleAuth";
-import { createSession } from "@/lib/session";
+import { attachSession } from "@/lib/session";
 
 const STATE_COOKIE = "khata_oauth_state";
 
@@ -17,41 +17,54 @@ export async function GET(request: NextRequest) {
   };
 
   if (!code || !returnedState || !expectedState || returnedState !== expectedState) {
+    console.error("Google OAuth callback: missing/mismatched state", {
+      hasCode: !!code,
+      hasReturnedState: !!returnedState,
+      hasExpectedState: !!expectedState,
+    });
     return clearStateCookie(NextResponse.redirect(`${origin}/welcome`));
   }
 
   let identity;
   try {
     identity = await exchangeCodeForIdentity(origin, code);
-  } catch {
+  } catch (err) {
+    console.error("Google OAuth callback: code exchange/verification failed", err);
     return clearStateCookie(NextResponse.redirect(`${origin}/welcome`));
   }
 
-  const { rows: existingRows } = await pool.query(
-    `SELECT id FROM profiles WHERE google_sub = $1`,
-    [identity.sub]
-  );
+  try {
+    const { rows: existingRows } = await pool.query(
+      `SELECT id FROM profiles WHERE google_sub = $1`,
+      [identity.sub]
+    );
 
-  if (existingRows.length > 0) {
-    await createSession(existingRows[0].id);
-    return clearStateCookie(NextResponse.redirect(`${origin}/`));
+    if (existingRows.length > 0) {
+      const response = NextResponse.redirect(`${origin}/`);
+      await attachSession(response, existingRows[0].id);
+      return clearStateCookie(response);
+    }
+
+    const { rows: nameCollisionRows } = await pool.query(
+      `SELECT id FROM profiles WHERE lower(name) = lower($1)`,
+      [identity.name]
+    );
+    if (nameCollisionRows.length > 0) {
+      const url = new URL("/register", origin);
+      url.searchParams.set("googleError", "duplicate");
+      url.searchParams.set("name", identity.name);
+      return clearStateCookie(NextResponse.redirect(url));
+    }
+
+    const { rows: insertedRows } = await pool.query(
+      `INSERT INTO profiles (id, name, email, google_sub) VALUES ($1, $2, $3, $4) RETURNING id`,
+      [crypto.randomUUID(), identity.name, identity.email, identity.sub]
+    );
+    const response = NextResponse.redirect(`${origin}/`);
+    await attachSession(response, insertedRows[0].id);
+    return clearStateCookie(response);
+  } catch (err) {
+    console.error("Google OAuth callback: profile lookup/creation failed", err);
+    return clearStateCookie(NextResponse.redirect(`${origin}/welcome`));
   }
-
-  const { rows: nameCollisionRows } = await pool.query(
-    `SELECT id FROM profiles WHERE lower(name) = lower($1)`,
-    [identity.name]
-  );
-  if (nameCollisionRows.length > 0) {
-    const url = new URL("/register", origin);
-    url.searchParams.set("googleError", "duplicate");
-    url.searchParams.set("name", identity.name);
-    return clearStateCookie(NextResponse.redirect(url));
-  }
-
-  const { rows: insertedRows } = await pool.query(
-    `INSERT INTO profiles (id, name, email, google_sub) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [crypto.randomUUID(), identity.name, identity.email, identity.sub]
-  );
-  await createSession(insertedRows[0].id);
-  return clearStateCookie(NextResponse.redirect(`${origin}/`));
 }

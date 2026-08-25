@@ -1,6 +1,7 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 
 const SESSION_COOKIE = "khata_session";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -36,10 +37,15 @@ async function decrypt(token: string): Promise<SessionPayload | null> {
   }
 }
 
-export async function createSession(profileId: string): Promise<void> {
+// Sets the session cookie directly on the response being returned. This
+// is deliberately not next/headers' cookies().set() — that mutates a
+// separate internal response and isn't guaranteed to merge into a
+// manually-constructed NextResponse (e.g. NextResponse.redirect())
+// returned from a Route Handler, which caused the cookie to silently
+// never reach the browser after a successful Google sign-in.
+export async function attachSession(response: NextResponse, profileId: string): Promise<void> {
   const token = await encrypt({ profileId });
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
+  response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -48,15 +54,16 @@ export async function createSession(profileId: string): Promise<void> {
   });
 }
 
+export function clearSession(response: NextResponse): void {
+  response.cookies.delete(SESSION_COOKIE);
+}
+
+// Reading (not writing) via next/headers' cookies() is fine — there's no
+// response-merging ambiguity for a read.
 export async function getSessionProfileId(): Promise<string | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const session = await decrypt(token);
   return session?.profileId ?? null;
-}
-
-export async function deleteSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
 }
