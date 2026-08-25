@@ -33,7 +33,7 @@ export default async function RegisterPage({
           href="/api/auth/google"
           className="bg-accent px-4 py-2.5 text-center font-medium text-background transition-colors hover:bg-accent/90"
         >
-          Continue with Google
+          Sign Up with Google
         </a>
       </div>
 
