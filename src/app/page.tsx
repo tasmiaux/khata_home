@@ -57,7 +57,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<Category>(CATEGORIES[0]);
+  const [category, setCategory] = useState<Category | null>(null);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(PAYMENT_MODES[0]);
   const [note, setNote] = useState("");
   const [repeatMonthly, setRepeatMonthly] = useState(false);
@@ -179,6 +179,10 @@ export default function Home() {
       setError("Enter a valid amount");
       return;
     }
+    if (!category) {
+      setError("Select a category");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -200,6 +204,7 @@ export default function Home() {
         throw new Error(data.error ?? "Failed to save expense");
       }
       setAmount("");
+      setCategory(null);
       setNote("");
       setRepeatMonthly(false);
       await loadExpenses(selectedDate);
@@ -393,7 +398,13 @@ export default function Home() {
             <label htmlFor="category" className="label-stamp text-xs text-muted uppercase">
               Category
             </label>
-            <Select id="category" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} />
+            <Select
+              id="category"
+              value={category}
+              onChange={setCategory}
+              options={CATEGORY_OPTIONS}
+              placeholder="Select category"
+            />
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">

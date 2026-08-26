@@ -11,12 +11,19 @@ export type SelectOption<T extends string> = {
 
 type SelectProps<T extends string> = {
   id?: string;
-  value: T;
+  value: T | null;
   onChange: (value: T) => void;
   options: readonly SelectOption<T>[];
+  placeholder?: string;
 };
 
-export default function Select<T extends string>({ id, value, onChange, options }: SelectProps<T>) {
+export default function Select<T extends string>({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: SelectProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +37,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selected = options.find((o) => o.value === value);
+  const selected = value === null ? undefined : options.find((o) => o.value === value);
   const SelectedIcon = selected?.icon;
 
   return (
@@ -45,7 +52,11 @@ export default function Select<T extends string>({ id, value, onChange, options 
       >
         <span className="flex items-center gap-2 truncate">
           {SelectedIcon && <SelectedIcon className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
-          <span className="truncate">{selected?.label}</span>
+          {selected ? (
+            <span className="truncate">{selected.label}</span>
+          ) : (
+            <span className="truncate text-sm font-normal text-muted/60">{placeholder}</span>
+          )}
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
