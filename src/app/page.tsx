@@ -352,7 +352,10 @@ export default function Home() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 border border-border px-5 py-5">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 rounded-[15px] border border-border px-5 py-5"
+      >
         <div className="relative w-fit">
           <input
             type="date"
@@ -588,7 +591,7 @@ export default function Home() {
 
       {pendingDelete && (
         <div className="fixed inset-x-0 bottom-24 z-20 flex justify-center px-5">
-          <div className="flex items-center gap-4 border border-border bg-background px-4 py-3 shadow-lg">
+          <div className="flex items-center gap-4 border border-border bg-surface px-4 py-3 shadow-lg">
             <span className="text-sm text-foreground">Expense deleted</span>
             <button
               type="button"

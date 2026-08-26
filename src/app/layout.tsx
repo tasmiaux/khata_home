@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Kalam, Lora } from "next/font/google";
+import { Geist_Mono, Kalam, Poppins } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
 import { AuthProvider } from "@/lib/authContext";
 import { SelectedDateProvider } from "@/lib/selectedDateContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -22,12 +23,6 @@ const kalam = Kalam({
   weight: ["400", "700"],
 });
 
-const lora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
 export const metadata: Metadata = {
   title: "Khata",
   description: "A simple daily expense tracker",
@@ -37,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} ${lora.variable} h-full antialiased`}
+      className={`${poppins.variable} ${geistMono.variable} ${kalam.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <AuthProvider>

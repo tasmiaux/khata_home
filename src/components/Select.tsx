@@ -56,7 +56,7 @@ export default function Select<T extends string>({ id, value, onChange, options 
       {open && (
         <ul
           role="listbox"
-          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-background p-1 shadow-lg"
+          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1 shadow-lg"
         >
           {options.map((option) => {
             const Icon = option.icon;
