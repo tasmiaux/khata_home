@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { logout } from "@/lib/auth";
@@ -8,10 +9,17 @@ import Avatar from "@/components/Avatar";
 
 export default function AccountsPage() {
   const { profile, refresh } = useAuth();
+  const router = useRouter();
 
   async function handleLogout() {
     await logout();
     await refresh();
+  }
+
+  async function handleResetDevice() {
+    await logout();
+    await refresh();
+    router.replace("/welcome");
   }
 
   if (!profile) return null;
@@ -34,17 +42,23 @@ export default function AccountsPage() {
         </div>
       </header>
 
-      <ul className="flex flex-col border border-border">
-        <li>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex min-h-12 w-full items-center px-5 py-3 text-left font-serif text-foreground transition-colors hover:bg-accent-soft"
-          >
-            Log out
-          </button>
-        </li>
-      </ul>
+      <div className="flex flex-col items-center gap-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full rounded-full border border-border px-4 py-2.5 text-center font-medium text-foreground transition-colors hover:bg-accent-soft"
+        >
+          Logout
+        </button>
+
+        <button
+          type="button"
+          onClick={handleResetDevice}
+          className="text-sm text-red-700 underline underline-offset-2 transition-colors hover:text-red-800"
+        >
+          Reset device
+        </button>
+      </div>
     </main>
   );
 }

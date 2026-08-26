@@ -442,7 +442,7 @@ export default function Home() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-1 bg-accent px-4 py-2.5 font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+          className="mt-1 rounded-full bg-accent px-4 py-2.5 font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
         >
           {submitting ? "Adding..." : "Add expense"}
         </button>
