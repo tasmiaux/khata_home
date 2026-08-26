@@ -10,7 +10,7 @@ const ITEMS = [
   { href: "/calculator", label: "Calculator", icon: Calculator },
 ] as const;
 
-const HIDDEN_ON = ["/welcome", "/login", "/register"];
+const HIDDEN_ON = ["/welcome", "/register"];
 
 export default function BottomNav() {
   const pathname = usePathname();

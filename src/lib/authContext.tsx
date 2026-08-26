@@ -14,8 +14,8 @@ type AuthState = {
 const AuthContext = createContext<AuthState | null>(null);
 
 // Redirect away from these if already authenticated (no reason to see the
-// welcome/login/register screens while signed in).
-const AUTH_ONLY_PATHS = ["/welcome", "/login", "/register"];
+// welcome/register screens while signed in).
+const AUTH_ONLY_PATHS = ["/welcome", "/register"];
 
 // Always accessible, regardless of auth state — never redirected either way.
 // Shared summary links must work for viewers with no Khata account at all.

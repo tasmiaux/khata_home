@@ -107,8 +107,9 @@ digitized ledger book.
 - `src/app/dashboard/page.tsx` — spending breakdown, chart, sharing
 - `src/app/calculator/page.tsx` — calculator utility
 - `src/app/welcome/page.tsx` — entry point for logged-out visitors
-- `src/app/login/`, `src/app/register/` — each just a "Continue with
-  Google" button (Register also shows the duplicate-name error, if any)
+- `src/app/register/` — single entry point into the Google OAuth flow
+  (shows the duplicate-name error, if any); Welcome's "Log in" button
+  points at the same `/api/auth/google` route
 - `src/app/accounts/page.tsx` — current profile (name/email), logout
 - `src/app/shared/[id]/page.tsx` — public read-only summary page
 - `src/app/api/auth/google/` — starts the OAuth flow (redirects to Google)
