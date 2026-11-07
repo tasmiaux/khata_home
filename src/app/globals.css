@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fcf6f1;
-  --surface: #ffffff;
+  --background: #fcf6f1; /* page: soft off-white */
+  --surface: #ffffff; /* cards, sheets, floating bars */
   --foreground: #111111;
   --muted: #6b6459;
-  --border: #f4dfcd;
-  --accent: #111111;
+  --border: #f4dfcd; /* warm tan */
+  --accent: #111111; /* primary buttons, active states */
   --accent-soft: rgba(17, 17, 17, 0.08);
+  --on-accent: #fcf6f1; /* text/icons sitting on --accent */
+  --field: #f9f6f2; /* inputs & pills on white cards: a very light warm grey, with a hairline border */
+  --track: #f4dfcd; /* track behind segmented controls */
 }
 
 @theme inline {
@@ -18,16 +21,28 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-field: var(--field);
+  --color-track: var(--track);
   --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
   --font-hand: var(--font-kalam);
   --font-serif: var(--font-poppins);
+  --shadow-card: 0 1px 2px rgba(80, 55, 30, 0.05), 0 8px 24px rgba(80, 55, 30, 0.06);
+  --shadow-nav: 0 2px 6px rgba(80, 55, 30, 0.06), 0 12px 32px rgba(80, 55, 30, 0.12);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* The one surface style: a white rounded card lifted off the cream page. */
+@layer components {
+  .card {
+    @apply rounded-[20px] bg-surface shadow-card;
+  }
 }
 
 /* Stamped/printed-label treatment for small-caps field labels (AMOUNT,

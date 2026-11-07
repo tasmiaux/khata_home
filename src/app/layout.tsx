@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           <SelectedDateProvider>
             <TopBar />
-            <div className="flex flex-1 flex-col pb-24">{children}</div>
+            <div className="flex flex-1 flex-col pb-28">{children}</div>
             <BottomNav />
           </SelectedDateProvider>
         </AuthProvider>

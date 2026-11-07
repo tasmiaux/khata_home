@@ -5,6 +5,7 @@ import { CATEGORIES, PAYMENT_MODES, type Category, type PaymentMode } from "@/li
 import { CATEGORY_ICON, PAYMENT_ICON } from "@/lib/categoryVisuals";
 import Select from "@/components/Select";
 import Pill from "@/components/Pill";
+import CategoryChip from "@/components/CategoryChip";
 import {
   formatChipDate,
   formatDateLabel,
@@ -275,35 +276,41 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
-      <header className="flex flex-col gap-3">
+      <header className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <span className="label-stamp text-xs text-muted uppercase">
-              {formatDateLabel(selectedDate)}
-            </span>
+          <div className="flex min-w-0 flex-col gap-1">
             <h1 className="font-serif text-3xl text-foreground">Hi {profile.name}!</h1>
+            <span className="text-sm text-muted">{formatDateLabel(selectedDate)}</span>
           </div>
 
-          <div className="relative mt-0.5">
+          <div className="relative mt-0.5 shrink-0">
             <input
               type="date"
               value={selectedDate}
               max={todayIso}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
               aria-label="Pick a date"
-              className="absolute inset-0 h-9 w-9 cursor-pointer opacity-0"
+              className="absolute inset-0 h-10 w-10 cursor-pointer opacity-0"
             />
-            <div className="pointer-events-none flex h-9 w-9 items-center justify-center rounded-full border border-border">
+            <div className="pointer-events-none flex h-10 w-10 items-center justify-center rounded-full bg-surface shadow-card">
               <Calendar className="h-4 w-4 text-accent" strokeWidth={2} />
             </div>
           </div>
         </div>
 
-        <p className="text-[15px] text-muted">
-          You&apos;ve spent{" "}
-          <span className="font-serif font-semibold text-accent">₹{total.toFixed(2)}</span>{" "}
-          {isToday ? "today." : "on this day."}
-        </p>
+        <div className="card flex items-center justify-between gap-3 px-5 py-4">
+          <div className="flex flex-col">
+            <span className="text-sm text-muted">
+              {isToday ? "You've spent today" : "You spent on this day"}
+            </span>
+            <span className="font-serif text-3xl font-semibold text-foreground tabular-nums">
+              ₹{total.toFixed(2)}
+            </span>
+          </div>
+          <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">
+            {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+          </span>
+        </div>
 
         {!isToday && (
           <button
@@ -319,23 +326,16 @@ export default function Home() {
       {isToday && suggestions.length > 0 && (
         <div className="flex flex-col gap-2">
           <h2 className="label-stamp text-xs text-muted uppercase">Recurring</h2>
-          <ul className="flex flex-col border border-border">
+          <ul className="flex flex-col gap-2">
             {suggestions.map((s, index) => {
-              const Icon = CATEGORY_ICON[s.category as Category];
               return (
                 <li
                   key={`${s.category}-${s.note ?? ""}`}
-                  className="flex min-h-12 items-center gap-3 border-b border-border px-4 py-3 last:border-b-0"
+                  className="card flex min-h-16 items-center gap-3 px-4 py-3"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border">
-                    {Icon ? (
-                      <Icon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                    )}
-                  </span>
+                  <CategoryChip category={s.category} />
                   <div className="flex flex-1 flex-col">
-                    <span className="font-serif text-foreground">{s.category}</span>
+                    <span className="font-serif font-medium text-foreground">{s.category}</span>
                     <span className="text-xs text-muted">
                       {s.note ? `${s.note} · ` : ""}₹{Number(s.amount).toFixed(2)}
                     </span>
@@ -345,7 +345,7 @@ export default function Home() {
                     onClick={() => handleAddSuggestion(s, index)}
                     disabled={addingSuggestion === index}
                     aria-label={`Add ${s.category} expense`}
-                    className="flex items-center gap-1 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
                   >
                     <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                     {addingSuggestion === index ? "Adding..." : "Add"}
@@ -359,7 +359,7 @@ export default function Home() {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-[15px] border border-border px-5 py-5"
+        className="card flex flex-col gap-4 px-5 py-5"
       >
         <div className="relative w-fit">
           <input
@@ -370,7 +370,7 @@ export default function Home() {
             aria-label="Change the date this expense is added for"
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
-          <span className="pointer-events-none flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
+          <span className="pointer-events-none flex items-center gap-1 rounded-full bg-field border border-border/60 px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
             {formatChipDate(selectedDate)}
             <ChevronDown className="h-3 w-3" strokeWidth={2} />
           </span>
@@ -388,13 +388,13 @@ export default function Home() {
             placeholder="₹0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="border border-border bg-background px-3 py-3 font-serif text-2xl text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+            className="rounded-2xl border border-border/60 bg-field px-4 py-3 font-serif text-2xl text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
             required
           />
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex gap-3">
+          <div className="flex min-w-0 flex-[1.25] flex-col gap-1.5">
             <label htmlFor="category" className="label-stamp text-xs text-muted uppercase">
               Category
             </label>
@@ -430,7 +430,7 @@ export default function Home() {
             placeholder="e.g. weekly vegetables"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="border-b border-border bg-transparent pb-1.5 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+            className="rounded-2xl border border-border/60 bg-field px-4 py-2.5 text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -442,11 +442,11 @@ export default function Home() {
             className="sr-only"
           />
           <span
-            className={`flex h-4 w-4 shrink-0 items-center justify-center border ${
-              repeatMonthly ? "border-accent bg-accent" : "border-foreground/30"
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+              repeatMonthly ? "border-accent bg-accent" : "border-muted/40 bg-field"
             }`}
           >
-            {repeatMonthly && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
+            {repeatMonthly && <Check className="h-3 w-3 text-on-accent" strokeWidth={3} />}
           </span>
           Repeat this monthly
         </label>
@@ -456,7 +456,7 @@ export default function Home() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-1 rounded-full bg-accent px-4 py-2.5 font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+          className="mt-1 rounded-full bg-accent px-4 py-2.5 font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:opacity-50"
         >
           {submitting ? "Adding..." : "Add expense"}
         </button>
@@ -471,12 +471,11 @@ export default function Home() {
         ) : expenses.length === 0 ? (
           <p className="py-3 text-sm text-muted/70">No expenses on this day.</p>
         ) : (
-          <ul className="flex flex-col">
+          <ul className="flex flex-col gap-2">
             {expenses.map((e) => {
-              const Icon = CATEGORY_ICON[e.category as Category];
               const isRowEditing = editing?.id === e.id;
               return (
-                <li key={e.id} className="min-h-12 border-t border-border py-3 last:border-b">
+                <li key={e.id} className="card min-h-16 px-4 py-3">
                   {isRowEditing ? (
                     <div className="flex flex-col gap-3">
                       <div className="relative w-fit">
@@ -490,7 +489,7 @@ export default function Home() {
                           aria-label="Change this expense's date"
                           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                         />
-                        <span className="pointer-events-none flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
+                        <span className="pointer-events-none flex items-center gap-1 rounded-full bg-field border border-border/60 px-3 py-1.5 text-xs font-medium tracking-wide text-accent uppercase">
                           {formatChipDate(editing.date)}
                           <ChevronDown className="h-3 w-3" strokeWidth={2} />
                         </span>
@@ -503,7 +502,7 @@ export default function Home() {
                           min="0"
                           value={editing.amount}
                           onChange={(ev) => setEditing({ ...editing, amount: ev.target.value })}
-                          className="w-24 border border-border bg-background px-2.5 py-2 font-serif text-foreground focus:border-accent focus:outline-none"
+                          className="w-24 rounded-2xl border border-border/60 bg-field px-3 py-2 font-serif text-foreground focus:border-accent focus:outline-none"
                         />
                         <div className="flex-1">
                           <Select
@@ -523,7 +522,7 @@ export default function Home() {
                         placeholder="Note (optional)"
                         value={editing.note}
                         onChange={(ev) => setEditing({ ...editing, note: ev.target.value })}
-                        className="border-b border-border bg-transparent pb-1.5 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+                        className="rounded-2xl border border-border/60 bg-field px-4 py-2.5 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
                       />
                       {editError && <p className="text-xs text-red-700">{editError}</p>}
                       <div className="flex gap-2">
@@ -531,32 +530,26 @@ export default function Home() {
                           type="button"
                           onClick={saveEdit}
                           disabled={savingEdit}
-                          className="flex-1 bg-accent px-3 py-2 text-sm font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+                          className="flex-1 rounded-full bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:opacity-50"
                         >
                           {savingEdit ? "Saving..." : "Save"}
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditing(null)}
-                          className="flex-1 border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground"
+                          className="flex-1 rounded-full bg-field border border-border/60 px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground"
                         >
                           Cancel
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border">
-                        {Icon ? (
-                          <Icon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-                        ) : (
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                        )}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <CategoryChip category={e.category} />
                       <div className="flex flex-1 flex-col">
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-serif text-foreground">{e.category}</span>
-                          <span className="font-serif tabular-nums text-foreground">
+                          <span className="font-serif font-medium text-foreground">{e.category}</span>
+                          <span className="font-serif font-semibold tabular-nums text-foreground">
                             ₹{Number(e.amount).toFixed(2)}
                           </span>
                         </div>
@@ -570,7 +563,7 @@ export default function Home() {
                           type="button"
                           onClick={() => startEdit(e)}
                           aria-label="Edit expense"
-                          className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-accent"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-accent-soft hover:text-accent"
                         >
                           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
@@ -578,7 +571,7 @@ export default function Home() {
                           type="button"
                           onClick={() => handleDelete(e)}
                           aria-label="Delete expense"
-                          className="flex h-6 w-6 items-center justify-center text-muted transition-colors hover:text-red-700"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-red-50 hover:text-red-700"
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
@@ -588,7 +581,7 @@ export default function Home() {
                 </li>
               );
             })}
-            <li className="flex min-h-12 items-baseline justify-between border-t-2 border-foreground pt-3">
+            <li className="flex items-baseline justify-between px-2 pt-3">
               <span className="label-stamp text-xs text-muted uppercase">
                 Total Spent
               </span>
@@ -601,8 +594,8 @@ export default function Home() {
       </div>
 
       {pendingDelete && (
-        <div className="fixed inset-x-0 bottom-24 z-20 flex justify-center px-5">
-          <div className="flex items-center gap-4 border border-border bg-surface px-4 py-3 shadow-lg">
+        <div className="fixed inset-x-0 bottom-28 z-20 flex justify-center px-5">
+          <div className="flex items-center gap-4 rounded-2xl bg-surface px-4 py-3 shadow-nav">
             <span className="text-sm text-foreground">Expense deleted</span>
             <button
               type="button"

@@ -27,7 +27,7 @@ export default async function RegisterPage({
 
         <a
           href="/api/auth/google"
-          className="rounded-full bg-accent px-4 py-2.5 text-center font-medium text-background transition-colors hover:bg-accent/90"
+          className="rounded-full bg-accent px-4 py-2.5 text-center font-medium text-on-accent transition-colors hover:bg-accent/90"
         >
           Sign up with Google
         </a>

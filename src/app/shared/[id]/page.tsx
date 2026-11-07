@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
-import { CATEGORY_ICON } from "@/lib/categoryVisuals";
-import type { Category } from "@/lib/constants";
+import CategoryChip from "@/components/CategoryChip";
 import { localDayRangeUtc, localWeekRangeUtc, localMonthRangeUtc, toISODate } from "@/lib/date";
 
 type CategoryTotal = { category: string; total: number };
@@ -76,28 +75,22 @@ export default async function SharedSummaryPage({
       </header>
 
       <div className="flex flex-col">
-        <h2 className="label-stamp mb-1 text-xs text-muted uppercase">
+        <h2 className="label-stamp mb-2 text-xs text-muted uppercase">
           Category breakdown
         </h2>
         {byCategory.length === 0 ? (
           <p className="py-3 text-sm text-muted/70">No expenses yet.</p>
         ) : (
-          <ul className="flex flex-col">
-            {byCategory.map((c) => {
-              const Icon = CATEGORY_ICON[c.category as Category];
-              return (
-                <li
-                  key={c.category}
-                  className="flex min-h-12 items-center gap-3 border-t border-border py-3 last:border-b"
-                >
-                  {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />}
-                  <span className="flex-1 font-serif text-foreground">{c.category}</span>
-                  <span className="font-serif tabular-nums text-foreground">
-                    ₹{c.total.toFixed(2)}
-                  </span>
-                </li>
-              );
-            })}
+          <ul className="flex flex-col gap-2">
+            {byCategory.map((c) => (
+              <li key={c.category} className="card flex min-h-16 items-center gap-3 px-4 py-3">
+                <CategoryChip category={c.category} />
+                <span className="flex-1 font-serif font-medium text-foreground">{c.category}</span>
+                <span className="font-serif font-semibold tabular-nums text-foreground">
+                  ₹{c.total.toFixed(2)}
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </div>

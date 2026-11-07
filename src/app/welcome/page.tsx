@@ -17,13 +17,13 @@ export default function WelcomePage() {
       <div className="flex flex-col gap-3">
         <Link
           href="/register"
-          className="rounded-full bg-accent px-4 py-2.5 text-center font-medium text-background transition-colors hover:bg-accent/90"
+          className="rounded-full bg-accent px-4 py-2.5 text-center font-medium text-on-accent transition-colors hover:bg-accent/90"
         >
           Create your khata
         </Link>
         <a
           href="/api/auth/google"
-          className="rounded-full border border-border px-4 py-2.5 text-center font-medium text-foreground transition-colors hover:bg-accent-soft"
+          className="rounded-full bg-surface px-4 py-2.5 text-center font-medium text-foreground shadow-card transition-colors hover:bg-accent-soft"
         >
           Log in
         </a>

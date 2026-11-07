@@ -34,7 +34,7 @@ export default function AccountsPage() {
         Back to Home
       </Link>
 
-      <header className="flex items-center gap-3">
+      <header className="card flex items-center gap-3 px-5 py-4">
         <Avatar name={profile.name} className="h-12 w-12 text-lg" />
         <div className="flex flex-col">
           <h1 className="font-serif text-3xl text-foreground">{profile.name}</h1>
@@ -46,7 +46,7 @@ export default function AccountsPage() {
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full rounded-full border border-border px-4 py-2.5 text-center font-medium text-foreground transition-colors hover:bg-accent-soft"
+          className="w-full rounded-full bg-surface px-4 py-2.5 text-center font-medium text-foreground shadow-card transition-colors hover:bg-accent-soft"
         >
           Logout
         </button>

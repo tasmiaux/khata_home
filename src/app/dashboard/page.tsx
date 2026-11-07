@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Share2, Copy, Check } from "lucide-react";
-import { CATEGORY_ICON, CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
+import { CATEGORY_CHART_COLOR } from "@/lib/categoryVisuals";
 import type { Category } from "@/lib/constants";
+import CategoryChip from "@/components/CategoryChip";
+import SegmentedControl from "@/components/SegmentedControl";
 import {
   formatShortDate,
   localDayRangeUtc,
@@ -43,7 +45,7 @@ const SIZE = 200;
 const STROKE = 26;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const FALLBACK_COLOR = "#98918a";
+const FALLBACK_COLOR = "#8a8070";
 
 export default function Dashboard() {
   const { profile, isAuthenticated, ready } = useAuth();
@@ -197,7 +199,7 @@ export default function Dashboard() {
         Back to Home
       </Link>
 
-      <div className="flex flex-col gap-3 border border-border px-5 py-4">
+      <div className="card flex flex-col gap-3 px-5 py-4">
         <button
           type="button"
           onClick={() =>
@@ -216,22 +218,12 @@ export default function Dashboard() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <span className="label-stamp text-xs text-muted uppercase">Period</span>
-              <div className="flex items-center gap-1 rounded-full border border-border p-1.5">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    onClick={() => setSharePeriod(tab.value)}
-                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                      sharePeriod === tab.value
-                        ? "bg-accent text-background"
-                        : "text-muted hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                ariaLabel="Share period"
+                options={TABS}
+                value={sharePeriod}
+                onChange={setSharePeriod}
+              />
             </div>
 
             {shareError && <p className="text-sm text-red-700">{shareError}</p>}
@@ -240,20 +232,20 @@ export default function Dashboard() {
               type="button"
               onClick={handleGenerateShare}
               disabled={shareLoading}
-              className="bg-accent px-4 py-2.5 text-sm font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+              className="rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:opacity-50"
             >
               {shareLoading ? "Saving..." : shareLink ? "Update Link" : "Generate Link"}
             </button>
 
             {shareLink && (
               <div className="flex flex-col gap-2">
-                <div className="border border-border px-3 py-2 text-sm text-muted">
+                <div className="rounded-2xl bg-field border border-border/60 px-4 py-2.5 text-sm break-all text-muted">
                   {shareLink}
                 </div>
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-1.5 border border-border px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+                  className="flex items-center justify-center gap-1.5 rounded-full bg-accent-soft px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
                 >
                   {copied ? (
                     <Check className="h-3.5 w-3.5" strokeWidth={2} />
@@ -271,20 +263,13 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="mx-auto flex w-full max-w-md items-center justify-center gap-1 rounded-full border border-border p-1.5">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setActiveTab(tab.value)}
-            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === tab.value ? "bg-accent text-background" : "text-muted hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        ariaLabel="Time range"
+        options={TABS}
+        value={activeTab}
+        onChange={setActiveTab}
+        className="w-full"
+      />
 
       <header className="flex flex-col gap-1">
         <h1 className="font-serif text-3xl text-foreground">{heading}</h1>
@@ -307,7 +292,7 @@ export default function Dashboard() {
         <p className="py-3 text-sm text-muted/70">No expenses yet.</p>
       ) : (
         <>
-          <div className="relative mx-auto flex items-center justify-center">
+          <div className="card relative flex items-center justify-center px-5 py-6">
             <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
               <circle
                 cx={SIZE / 2}
@@ -339,27 +324,25 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <ul className="flex flex-col">
-            {segments.map((s) => {
-              const Icon = CATEGORY_ICON[s.category as Category];
-              return (
-                <li
-                  key={s.category}
-                  className="flex min-h-12 items-center gap-3 border-t border-border py-3 last:border-b"
-                >
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: s.color }}
-                  />
-                  {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />}
-                  <span className="flex-1 font-serif text-foreground">{s.category}</span>
-                  <span className="text-xs text-muted">{s.percent}%</span>
-                  <span className="w-20 text-right font-serif tabular-nums text-foreground">
+          <ul className="flex flex-col gap-2">
+            {segments.map((s) => (
+              <li key={s.category} className="card flex min-h-16 items-center gap-3 px-4 py-3">
+                <CategoryChip category={s.category} />
+                <span className="flex-1 font-serif font-medium text-foreground">{s.category}</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-serif font-semibold tabular-nums text-foreground">
                     ₹{s.total.toFixed(2)}
                   </span>
-                </li>
-              );
-            })}
+                  <span className="flex items-center gap-1.5 text-xs text-muted">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    {s.percent}%
+                  </span>
+                </div>
+              </li>
+            ))}
           </ul>
         </>
       )}

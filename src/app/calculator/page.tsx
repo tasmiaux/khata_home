@@ -107,9 +107,9 @@ export default function CalculatorPage() {
     setJustEvaluated(true);
   }
 
-  const operatorButton = "border border-accent/50 font-serif text-xl text-accent transition-colors hover:bg-accent-soft";
-  const digitButton = "border border-border font-serif text-xl text-foreground transition-colors hover:bg-accent-soft";
-  const utilButton = "border border-border font-serif text-xl text-muted transition-colors hover:bg-accent-soft";
+  const operatorButton = "rounded-2xl bg-accent-soft font-serif text-xl text-accent transition-colors hover:bg-accent/20";
+  const digitButton = "rounded-2xl bg-surface font-serif text-xl text-foreground shadow-card transition-colors hover:bg-accent-soft";
+  const utilButton = "rounded-2xl bg-track font-serif text-xl text-muted transition-colors hover:bg-accent-soft";
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
@@ -119,7 +119,7 @@ export default function CalculatorPage() {
       </header>
 
       <div className="flex flex-col gap-4">
-        <div className="flex min-h-24 items-end justify-end overflow-x-auto border border-border bg-background px-4 py-6">
+        <div className="card flex min-h-24 items-end justify-end overflow-x-auto px-5 py-6">
           <span className="font-serif text-4xl tabular-nums text-foreground">
             {expression || "0"}
           </span>
@@ -182,7 +182,7 @@ export default function CalculatorPage() {
           <button
             type="button"
             onClick={pressEquals}
-            className="row-span-2 bg-accent font-serif text-2xl text-background transition-colors hover:bg-accent/90"
+            className="row-span-2 rounded-2xl bg-accent font-serif text-2xl text-on-accent transition-colors hover:bg-accent/90"
           >
             =
           </button>

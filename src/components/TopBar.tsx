@@ -16,7 +16,7 @@ export default function TopBar() {
   if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
-    <div className="flex items-center justify-between border-b border-border px-5 py-3">
+    <div className="flex items-center justify-between px-5 py-3">
       <div className="flex items-baseline gap-0.5 font-hand text-xl leading-none">
         <span className="text-accent">खा</span>
         <span className="text-foreground">ta</span>
@@ -24,7 +24,7 @@ export default function TopBar() {
       {isAuthenticated && profile && (
         <Link
           href="/accounts"
-          className="flex items-center gap-2 rounded-full border border-border py-1 pr-3 pl-1 text-xs font-medium tracking-wide text-muted uppercase transition-colors hover:border-accent/50 hover:text-accent"
+          className="flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1 text-xs font-medium tracking-wide text-muted uppercase shadow-card transition-colors hover:text-accent"
         >
           <Avatar name={profile.name} className="h-6 w-6 text-[11px]" />
           {profile.name}

@@ -48,14 +48,14 @@ export default function Select<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 rounded-full border border-foreground/20 bg-background px-4 py-2 text-left text-foreground transition-colors hover:border-accent/50 focus:border-accent focus:outline-none"
+        className="flex w-full items-center justify-between gap-1.5 rounded-full border border-border/60 bg-field px-3 py-2 text-left text-foreground transition-colors hover:border-accent/40 focus:border-accent focus:outline-none"
       >
         <span className="flex items-center gap-2 truncate">
           {SelectedIcon && <SelectedIcon className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
           {selected ? (
             <span className="truncate">{selected.label}</span>
           ) : (
-            <span className="truncate text-sm font-normal text-muted/60">{placeholder}</span>
+            <span className="truncate text-xs font-normal text-muted/60">{placeholder}</span>
           )}
         </span>
         <ChevronDown
@@ -67,7 +67,7 @@ export default function Select<T extends string>({
       {open && (
         <ul
           role="listbox"
-          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1 shadow-lg"
+          className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1 shadow-nav"
         >
           {options.map((option) => {
             const Icon = option.icon;
@@ -81,7 +81,7 @@ export default function Select<T extends string>({
                     setOpen(false);
                   }}
                   className={`flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent-soft ${
-                    isSelected ? "font-medium text-accent" : "text-foreground"
+                    isSelected ? "bg-accent-soft font-medium text-accent" : "text-foreground"
                   }`}
                 >
                   {Icon && <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />}
