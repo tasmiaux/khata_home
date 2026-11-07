@@ -190,7 +190,7 @@ export default function Dashboard() {
   if (!ready || !isAuthenticated || !profile) return null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pt-3 pb-6">
       <Link
         href="/"
         className="flex w-fit items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase transition-colors hover:text-accent"

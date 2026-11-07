@@ -275,8 +275,8 @@ export default function Home() {
   if (!ready || !isAuthenticated || !profile) return null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
-      <header className="flex flex-col gap-4">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pt-3 pb-6">
+      <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h1 className="font-serif text-3xl text-foreground">Hi {profile.name}!</h1>
@@ -298,7 +298,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="card flex items-center justify-between gap-3 px-5 py-4">
+        <div className="card flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex flex-col">
             <span className="text-sm text-muted">
               {isToday ? "You've spent today" : "You spent on this day"}
@@ -359,7 +359,7 @@ export default function Home() {
 
       <form
         onSubmit={handleSubmit}
-        className="card flex flex-col gap-4 px-5 py-5"
+        className="card flex flex-col gap-3.5 px-5 py-4"
       >
         <div className="relative w-fit">
           <input
@@ -388,7 +388,7 @@ export default function Home() {
             placeholder="₹0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="rounded-2xl border border-border/60 bg-field px-4 py-3 font-serif text-2xl text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
+            className="rounded-2xl border border-border/60 bg-field px-4 py-2.5 font-serif text-2xl text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
             required
           />
         </div>

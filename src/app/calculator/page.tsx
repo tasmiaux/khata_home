@@ -112,7 +112,7 @@ export default function CalculatorPage() {
   const utilButton = "rounded-2xl bg-track font-serif text-xl text-muted transition-colors hover:bg-accent-soft";
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-8">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pt-3 pb-6">
       <header className="flex flex-col gap-1">
         <h1 className="font-serif text-3xl text-foreground">Calculator</h1>
         <p className="text-[15px] text-muted">Quick math — nothing here is saved.</p>
